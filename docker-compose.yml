@@ -1,0 +1,312 @@
+# ContextIQ — Complete Integrated Stack
+#
+# Brings up all 6 services + the shared PostgreSQL database with one command:
+#   cp .env.example .env   # (optional, defaults are wired for local dev)
+#   docker compose up --build
+#
+# Service map (host ports):
+#   db              -> PostgreSQL 16        (port 5433 on host)
+#   backend         -> Core FastAPI API     (port 8000)
+#   data-engine     -> Behavioural analytics(port 8001)
+#   forgetting-ml   -> Forgetting prediction (port 8002)
+#   context-engine  -> Context mining API   (port 8003)
+#   intelligence    -> LLM insights API     (port 8004)
+#   frontend        -> Next.js 16 UI        (port 3000)
+#
+# NOTE: Port 5433 is used for the DB container to avoid conflicting with a
+# locally-installed PostgreSQL server on 5432. Inside compose the internal
+# port is still 5432 so services connect as  postgresql://postgres@db:5432/contextiq
+#
+# After first start, apply migrations (backend alembic):
+#   docker compose exec backend alembic upgrade head
+#   docker compose exec backend python /scripts/generate_synthetic_data.py --mode db --users 2
+
+x-common-cors-origins: &common-cors-origins
+  CORS_ORIGINS: >-
+    ["http://localhost:3000",
+     "http://127.0.0.1:3000",
+     "http://localhost:8000",
+     "http://localhost:8001",
+     "http://localhost:8002",
+     "http://localhost:8003",
+     "http://localhost:8004"]
+
+services:
+  # ---------------------------------------------------------------------------
+  # SHARED DATABASE  (PostgreSQL 16)
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-contextiq}
+    ports:
+      - "5433:5432"
+    volumes:
+      - contextiq_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d contextiq"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 5s
+
+  # ---------------------------------------------------------------------------
+  # CORE BACKEND API  (port 8000)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-contextiq}
+      APP_ENV: ${APP_ENV:-development}
+      DEBUG: ${DEBUG:-false}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      API_V1_PREFIX: /api/v1
+      ML_MODEL_DIR: /app/ml/models/artifacts
+      PYTHONUNBUFFERED: "1"
+      <<: *common-cors-origins
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./ml:/app/ml
+      - ./scripts:/scripts
+      - ./data:/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://localhost:8000/api/v1/health >/dev/null || wget -qO- http://localhost:8000/api/v1/health >/dev/null",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        echo "[backend] Running alembic migrations..."
+        alembic upgrade head
+        echo "[backend] Starting uvicorn on :8000"
+        exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log
+
+  # ---------------------------------------------------------------------------
+  # DATA ENGINE (Behavioural Analytics)  (port 8001 externally, 8000 internally)
+  # ---------------------------------------------------------------------------
+  data-engine:
+    build:
+      context: ./data-engine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    environment:
+      # By default use a local SQLite file so the service is always usable.
+      # Override to share the Postgres above if preferred.
+      DATABASE_URL: sqlite:///./contextiq.db
+      APP_ENV: development
+      APP_NAME: "ContextIQ Data Engine"
+      API_V1_PREFIX: /api/v1
+      CONTEXT_SWITCH_GAP_MINUTES: "5"
+      SESSION_IDLE_TIMEOUT_MINUTES: "30"
+      SYNTHETIC_RANDOM_SEED: "42"
+      PYTHONUNBUFFERED: "1"
+      <<: *common-cors-origins
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./data-engine:/app
+      - data_engine_db:/app/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://localhost:8000/health >/dev/null || wget -qO- http://localhost:8000/health >/dev/null",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        echo "[data-engine] Initializing tables..."
+        python -c "from app.database.base import Base; from app.database.session import engine; import app.models; Base.metadata.create_all(bind=engine); print('tables created')" || true
+        echo "[data-engine] Generating synthetic data (SQLite)..."
+        python scripts/generate_synthetic_data.py --users 10 --days 30 --seed 42 || echo "[data-engine] WARNING: synthetic data generation failed (service will still start)"
+        echo "[data-engine] Starting uvicorn on :8000"
+        exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  # ---------------------------------------------------------------------------
+  # FORGETTING ML SERVICE  (port 8002)
+  # ---------------------------------------------------------------------------
+  forgetting-ml:
+    build:
+      context: ./forgetting-ml
+    restart: unless-stopped
+    environment:
+      PYTHONUNBUFFERED: "1"
+      PYTHONPATH: /app
+      APP_ENV: development
+      <<: *common-cors-origins
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./forgetting-ml:/app
+      - forgetting_artifacts:/app/artifacts
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://localhost:8000/health >/dev/null || wget -qO- http://localhost:8000/health >/dev/null",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        echo "[forgetting-ml] Ensuring artifacts dir..."
+        mkdir -p artifacts datasets
+        echo "[forgetting-ml] Generating default dataset if missing..."
+        python -m ml.data.generate_dataset 2>&1 | tail -5 || true
+        if [ ! -f artifacts/model_bundle.joblib ]; then
+          echo "[forgetting-ml] Training initial model (first boot only)..."
+          python -m ml.training.train 2>&1 | tail -10 || echo "[forgetting-ml] WARNING: training skipped; predictions will be degraded"
+        fi
+        echo "[forgetting-ml] Starting uvicorn on :8000"
+        exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  # ---------------------------------------------------------------------------
+  # CONTEXT ENGINE (port 8003)
+  # ---------------------------------------------------------------------------
+  context-engine:
+    build:
+      context: ./context-engine
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      PYTHONPATH: /srv/app
+      PYTHONUNBUFFERED: "1"
+      APP_ENV: development
+      <<: *common-cors-origins
+    ports:
+      - "8003:8000"
+    volumes:
+      - ./context-engine:/srv/app
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://localhost:8000/health >/dev/null || wget -qO- http://localhost:8000/health >/dev/null",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        echo "[context-engine] Generating synthetic events..."
+        python scripts/generate_synthetic_data.py 2>&1 | tail -5 || true
+        echo "[context-engine] Starting uvicorn on :8000"
+        exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  # ---------------------------------------------------------------------------
+  # INTELLIGENCE / LLM SERVICE  (port 8004)
+  # LLM_PROVIDER: mock (default, no key) | anthropic | openai | openrouter
+  # ---------------------------------------------------------------------------
+  intelligence:
+    build:
+      context: ./intelligence
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-openai/gpt-4o-mini}
+      APP_VERSION: "0.1.0"
+      PYTHONUNBUFFERED: "1"
+      APP_ENV: development
+      <<: *common-cors-origins
+    ports:
+      - "8004:8000"
+    volumes:
+      - ./intelligence/app:/app/app
+      - ./intelligence/examples:/app/examples
+      - ./intelligence/tests:/app/tests
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://localhost:8000/health >/dev/null || wget -qO- http://localhost:8000/health >/dev/null",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        echo "[intelligence] provider=$${LLM_PROVIDER}"
+        if [ "$${LLM_PROVIDER}" != "mock" ] && [ -z "$${LLM_API_KEY}" ]; then
+          echo "[intelligence] WARNING: LLM_PROVIDER=$${LLM_PROVIDER} but LLM_API_KEY is empty — falling back to mock provider"
+          export LLM_PROVIDER=mock
+        fi
+        echo "[intelligence] Starting uvicorn on :8000"
+        exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  # ---------------------------------------------------------------------------
+  # FRONTEND  (port 3000)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      target: deps
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_USE_MOCK: "false"
+      NEXT_PUBLIC_API_BASE_URL: "http://localhost:8000/api/v1"
+      NEXT_PUBLIC_ANALYTICS_API_URL: "http://localhost:8001/api/v1"
+      NEXT_PUBLIC_PREDICTION_API_URL: "http://localhost:8000/api/v1"
+      NEXT_PUBLIC_CONTEXT_API_URL: "http://localhost:8003/api/v1"
+      NEXT_PUBLIC_INSIGHTS_API_URL: "http://localhost:8004/api/v1"
+      NEXT_PUBLIC_RECOMMENDATION_API_URL: "http://localhost:8003/api/v1"
+      NEXT_PUBLIC_DEV_USER_ID: "11111111-1111-1111-1111-111111111111"
+      WATCHPACK_POLLING: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    working_dir: /app
+    command: ["npm", "run", "dev", "--", "--hostname", "0.0.0.0", "--port", "3000"]
+
+volumes:
+  contextiq_db_data:
+  data_engine_db:
+  forgetting_artifacts:

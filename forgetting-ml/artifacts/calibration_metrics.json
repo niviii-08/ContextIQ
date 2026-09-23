@@ -1,0 +1,27 @@
+{
+  "dummy_most_frequent": {
+    "brier_score": 0.27644444444444444,
+    "expected_calibration_error": 0.0,
+    "n_bins": 10
+  },
+  "logistic_regression": {
+    "brier_score": 0.22733315226656625,
+    "expected_calibration_error": 0.1992027149898045,
+    "n_bins": 10
+  },
+  "random_forest": {
+    "brier_score": 0.21787867356961735,
+    "expected_calibration_error": 0.17721233325915697,
+    "n_bins": 10
+  },
+  "xgboost": {
+    "brier_score": 0.2311706483124747,
+    "expected_calibration_error": 0.19052071542314036,
+    "n_bins": 10
+  },
+  "logistic_regression_calibrated": {
+    "brier_score": 0.18564359954174217,
+    "expected_calibration_error": 0.017840968299208275,
+    "n_bins": 10
+  }
+}

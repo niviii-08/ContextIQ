@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ContextIQ Data Quality Report</title>
+<style>
+body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; color: #1f2937; }
+h1 { color: #1e3a8a; border-bottom: 2px solid #3b82f6; padding-bottom: .5rem; }
+h2 { color: #1e40af; margin-top: 2.5rem; }
+h3 { color: #1d4ed8; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.92rem; }
+th, td { border: 1px solid #e5e7eb; padding: .5rem .75rem; text-align: left; }
+th { background: #eff6ff; }
+tr.bad { background: #fef2f2; }
+tr.warn { background: #fffbeb; }
+code { background: #f3f4f6; padding: .1rem .3rem; border-radius: 4px; font-size: .85em; }
+pre { background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; }
+.meta { color: #6b7280; font-size: .9rem; }
+</style>
+</head>
+<body>
+<h1>ContextIQ — Data Quality Report</h1>
+<p class="meta">Generated: 2026-08-19T16:17:04.973835+00:00 (UTC). All data is synthetic.</p>
+<h2>1. Record Counts per Table</h2>
+<table><tr><th>Table</th><th>Rows</th><th>Columns</th></tr><tr><td><code>features</code></td><td>13,799</td><td>29</td></tr><tr><td><code>interruptions</code></td><td>19,327</td><td>12</td></tr><tr><td><code>locations</code></td><td>120</td><td>8</td></tr><tr><td><code>sessions</code></td><td>24,790</td><td>10</td></tr><tr><td><code>task_events</code></td><td>63,888</td><td>13</td></tr><tr><td><code>tasks</code></td><td>13,799</td><td>20</td></tr><tr><td><code>users</code></td><td>50</td><td>6</td></tr></table>
+<h2>2. Null Rates per Column</h2>
+<h3><code>features</code></h3><table><tr><th>Column</th><th>Null Rate</th><th>Null Count</th></tr><tr class="bad"><td><code>deadline_distance_hours</code></td><td>59.57%</td><td>8,220</td></tr><tr class="warn"><td><code>hour_forgetting_rate</code></td><td>8.30%</td><td>1,145</td></tr><tr ><td><code>category_forgetting_rate</code></td><td>2.90%</td><td>400</td></tr><tr ><td><code>days_since_last_similar</code></td><td>2.90%</td><td>400</td></tr><tr ><td><code>weekday_forgetting_rate</code></td><td>2.57%</td><td>354</td></tr><tr ><td><code>recovery_time_s</code></td><td>0.99%</td><td>137</td></tr><tr ><td><code>location_forgetting_rate</code></td><td>0.88%</td><td>121</td></tr><tr ><td><code>avg_interruption_duration_s</code></td><td>0.86%</td><td>118</td></tr><tr ><td><code>context_switch_rate_7d</code></td><td>0.39%</td><td>54</td></tr><tr ><td><code>avg_session_duration_7d_s</code></td><td>0.39%</td><td>54</td></tr><tr ><td><code>completion_rate</code></td><td>0.37%</td><td>51</td></tr><tr ><td><code>daily_friction_score</code></td><td>0.37%</td><td>51</td></tr></table>
+<h3><code>interruptions</code></h3><table><tr><th>Column</th><th>Null Rate</th><th>Null Count</th></tr><tr class="bad"><td><code>source_label</code></td><td>100.00%</td><td>19,327</td></tr></table>
+<h3><code>locations</code></h3><table><tr><th>Column</th><th>Null Rate</th><th>Null Count</th></tr><tr class="bad"><td><code>latitude</code></td><td>100.00%</td><td>120</td></tr><tr class="bad"><td><code>longitude</code></td><td>100.00%</td><td>120</td></tr></table>
+<h3><code>sessions</code></h3><table><tr><th>Column</th><th>Null Rate</th><th>Null Count</th></tr><tr class="bad"><td><code>resume_delay_seconds</code></td><td>60.23%</td><td>14,930</td></tr></table>
+<h3><code>task_events</code></h3><table><tr><th>Column</th><th>Null Rate</th><th>Null Count</th></tr><tr class="bad"><td><code>event_metadata</code></td><td>100.00%</td><td>63,888</td></tr><tr class="bad"><td><code>inter_event_gap_s</code></td><td>21.60%</td><td>13,799</td></tr></table>
+<h3><code>tasks</code></h3><table><tr><th>Column</th><th>Null Rate</th><th>Null Count</th></tr><tr class="bad"><td><code>cancelled_at</code></td><td>95.51%</td><td>13,180</td></tr><tr class="bad"><td><code>forgotten_at</code></td><td>75.97%</td><td>10,483</td></tr><tr class="bad"><td><code>deadline_distance_h</code></td><td>59.57%</td><td>8,220</td></tr><tr class="bad"><td><code>deadline_at</code></td><td>59.57%</td><td>8,220</td></tr><tr class="bad"><td><code>task_duration_h</code></td><td>28.52%</td><td>3,935</td></tr><tr class="bad"><td><code>completed_at</code></td><td>28.52%</td><td>3,935</td></tr><tr class="warn"><td><code>started_at</code></td><td>12.41%</td><td>1,713</td></tr><tr class="warn"><td><code>task_age_at_start_h</code></td><td>12.41%</td><td>1,713</td></tr></table>
+<h3><code>users</code> — all columns fully populated (≤0.1% nulls)</h3>
+<h2>3. Event Sequence Validity</h2>
+<pre>## 3. Event Sequence Validity
+
+- Total validation issues: **64**
+- Impossible sequence events (terminal→open): **0**
+
+- Total tasks with events: **13,799**
+- Avg open events per task: **2.67**
+- Avg terminal events per task: **1.00**
+- Tasks with ≥1 open but no terminal event: **0** (dangling sessions)
+
+</pre>
+<h2>4. Duplicate Removal Summary</h2><table><tr><th>Table</th><th>Duplicates Removed</th></tr><tr><td><code>events</code></td><td>0</td></tr><tr><td><code>interruptions</code></td><td>0</td></tr><tr><td><code>tasks</code></td><td>0</td></tr></table>
+<h2>5. Timestamp Range Sanity</h2><table><tr><th>Table</th><th>Column</th><th>Earliest</th><th>Latest</th><th>Range (days)</th></tr><tr><td><code>task_events</code></td><td><code>event_time</code></td><td>2026-06-20 00:36</td><td>2026-08-22 10:54</td><td>63.4</td></tr><tr><td><code>tasks</code></td><td><code>created_at</code></td><td>2026-06-20 00:36</td><td>2026-08-18 23:36</td><td>60.0</td></tr><tr><td><code>interruptions</code></td><td><code>start_time</code></td><td>2026-06-20 01:11</td><td>2026-08-20 05:23</td><td>61.2</td></tr><tr><td><code>users</code></td><td><code>created_at</code></td><td>2026-06-20 15:49</td><td>2026-06-20 15:49</td><td>0.0</td></tr><tr><td><code>locations</code></td><td><code>created_at</code></td><td>2026-06-20 15:49</td><td>2026-06-20 15:49</td><td>0.0</td></tr></table>
+<h2>6. ML Target — Class Balance</h2><p>Target column: <code>will_forget</code></p><table><tr><th>Class</th><th>Count</th><th>Percentage</th></tr><tr><td>0 (not forgotten)</td><td>10,483</td><td>76.0%</td></tr><tr><td>1 (forgotten)</td><td>3,316</td><td>24.0%</td></tr><tr><td><strong>Total</strong></td><td><strong>13,799</strong></td><td>100%</td></tr></table><p>✓ Reasonably balanced</p>
+<h2>7. Feature Completeness</h2><p>Features: 23, mean completeness: 96.5%</p><table><tr><th>Feature</th><th>Completeness</th><th>Null Rate</th></tr><tr class="bad"><td><code>deadline_distance_hours</code></td><td>40.4%</td><td>59.6%</td></tr></table>
+<h2>8. Validation & Cleaning Summary</h2>
+<pre>## 8. Validation &amp; Cleaning Summary
+
+- Validation issues: **64**
+  - Errors: **0**
+  - Warnings: **64**
+- Cleaning operations performed:
+  - Timezone normalized: **{&#x27;events&#x27;: 0, &#x27;interruptions&#x27;: 0, &#x27;tasks&#x27;: 0}**
+  - Durations imputed: **0**
+  - End times imputed: **0**
+  - Categories normalized: **0**
+  - Anomalies flagged: **0**
+  - Priorities clamped: **0**
+
+</pre>
+
+</body>
+</html>

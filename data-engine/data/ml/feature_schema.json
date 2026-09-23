@@ -1,0 +1,163 @@
+{
+  "previous_forgetting_count": {
+    "dtype": "int64",
+    "null_rate": 0.0,
+    "min": 0.0,
+    "max": 122.0,
+    "mean": 27.6955
+  },
+  "previous_completion_count": {
+    "dtype": "int64",
+    "null_rate": 0.0,
+    "min": 0.0,
+    "max": 239.0,
+    "mean": 81.1893
+  },
+  "completion_rate": {
+    "dtype": "float64",
+    "null_rate": 0.0046,
+    "min": 0.0,
+    "max": 1.0,
+    "mean": 0.7235
+  },
+  "category_forgetting_rate": {
+    "dtype": "float64",
+    "null_rate": 0.0362,
+    "min": 0.0,
+    "max": 1.0,
+    "mean": 0.2328
+  },
+  "location_forgetting_rate": {
+    "dtype": "float64",
+    "null_rate": 0.011,
+    "min": 0.0,
+    "max": 1.0,
+    "mean": 0.2342
+  },
+  "weekday_forgetting_rate": {
+    "dtype": "float64",
+    "null_rate": 0.0321,
+    "min": 0.0,
+    "max": 1.0,
+    "mean": 0.2303
+  },
+  "hour_forgetting_rate": {
+    "dtype": "float64",
+    "null_rate": 0.1009,
+    "min": 0.0,
+    "max": 1.0,
+    "mean": 0.2337
+  },
+  "task_frequency": {
+    "dtype": "int64",
+    "null_rate": 0.0,
+    "min": 0.0,
+    "max": 52.0,
+    "mean": 14.2193
+  },
+  "days_since_last_similar": {
+    "dtype": "float64",
+    "null_rate": 0.0362,
+    "min": 0.001,
+    "max": 17.644,
+    "mean": 1.676
+  },
+  "deadline_distance_hours": {
+    "dtype": "float64",
+    "null_rate": 0.5974,
+    "min": 2.0,
+    "max": 72.0,
+    "mean": 37.1319
+  },
+  "priority": {
+    "dtype": "int64",
+    "null_rate": 0.0,
+    "min": 1.0,
+    "max": 5.0,
+    "mean": 2.9994
+  },
+  "tasks_today": {
+    "dtype": "int64",
+    "null_rate": 0.0,
+    "min": 0.0,
+    "max": 15.0,
+    "mean": 4.6841
+  },
+  "interruptions_today": {
+    "dtype": "int64",
+    "null_rate": 0.0,
+    "min": 0.0,
+    "max": 56.0,
+    "mean": 6.6009
+  },
+  "recent_context_switches": {
+    "dtype": "int64",
+    "null_rate": 0.0,
+    "min": 0.0,
+    "max": 67.0,
+    "mean": 21.7417
+  },
+  "avg_interruption_duration_s": {
+    "dtype": "float64",
+    "null_rate": 0.0107,
+    "min": 5.0,
+    "max": 727.0,
+    "mean": 88.8169
+  },
+  "recovery_time_s": {
+    "dtype": "float64",
+    "null_rate": 0.0124,
+    "min": 127.33,
+    "max": 13773.92,
+    "mean": 3689.7529
+  },
+  "daily_friction_score": {
+    "dtype": "float64",
+    "null_rate": 0.0046,
+    "min": 0.0,
+    "max": 0.9065,
+    "mean": 0.2539
+  },
+  "repeated_context_count": {
+    "dtype": "int64",
+    "null_rate": 0.0,
+    "min": 0.0,
+    "max": 27.0,
+    "mean": 6.032
+  },
+  "forgetting_streak": {
+    "dtype": "int64",
+    "null_rate": 0.0,
+    "min": 0.0,
+    "max": 9.0,
+    "mean": 0.3503
+  },
+  "avg_session_duration_7d_s": {
+    "dtype": "float64",
+    "null_rate": 0.0049,
+    "min": 140.0,
+    "max": 12211.0,
+    "mean": 1837.7867
+  },
+  "context_switch_rate_7d": {
+    "dtype": "float64",
+    "null_rate": 0.0049,
+    "min": 0.0,
+    "max": 1.0,
+    "mean": 0.0285
+  },
+  "is_late_night": {
+    "dtype": "int64",
+    "null_rate": 0.0,
+    "min": 0.0,
+    "max": 1.0,
+    "mean": 0.0342
+  },
+  "is_repeated_context": {
+    "dtype": "int64",
+    "null_rate": 0.0,
+    "min": 0.0,
+    "max": 1.0,
+    "mean": 0.913
+  }
+}

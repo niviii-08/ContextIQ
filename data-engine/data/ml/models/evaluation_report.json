@@ -1,0 +1,71 @@
+{
+  "generated_at": "2026-08-19T16:16:38.410868+00:00",
+  "note": "All models trained on SYNTHETIC data. Not for production use.",
+  "feature_names": [
+    "previous_forgetting_count",
+    "previous_completion_count",
+    "completion_rate",
+    "category_forgetting_rate",
+    "location_forgetting_rate",
+    "weekday_forgetting_rate",
+    "hour_forgetting_rate",
+    "task_frequency",
+    "days_since_last_similar",
+    "deadline_distance_hours",
+    "priority",
+    "tasks_today",
+    "interruptions_today",
+    "recent_context_switches",
+    "avg_interruption_duration_s",
+    "recovery_time_s",
+    "daily_friction_score",
+    "repeated_context_count",
+    "forgetting_streak",
+    "avg_session_duration_7d_s",
+    "context_switch_rate_7d",
+    "is_late_night",
+    "is_repeated_context"
+  ],
+  "n_train": 11039,
+  "n_test": 2760,
+  "models": [
+    {
+      "model": "LogisticRegression",
+      "accuracy": 0.7047,
+      "precision_macro": 0.6427,
+      "recall_macro": 0.6774,
+      "f1_macro": 0.6483,
+      "f1_weighted": 0.7205,
+      "roc_auc": 0.7147,
+      "confusion_matrix": [
+        [
+          1525,
+          562
+        ],
+        [
+          253,
+          420
+        ]
+      ]
+    },
+    {
+      "model": "RandomForest",
+      "accuracy": 0.7243,
+      "precision_macro": 0.6491,
+      "recall_macro": 0.6737,
+      "f1_macro": 0.6566,
+      "f1_weighted": 0.7347,
+      "roc_auc": 0.7126,
+      "confusion_matrix": [
+        [
+          1612,
+          475
+        ],
+        [
+          286,
+          387
+        ]
+      ]
+    }
+  ]
+}

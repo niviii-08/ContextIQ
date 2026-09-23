@@ -1,0 +1,163 @@
+@import "tailwindcss";
+
+/*
+ * ContextIQ Design Tokens
+ * ------------------------
+ * Palette: cool "instrumentation" neutrals with a single signal-blue
+ * accent (used for focus, primary actions, and data highlights) plus a
+ * dedicated three-step risk scale (LOW/MEDIUM/HIGH) reused everywhere
+ * risk, priority, or friction is communicated. Numbers are set in a
+ * monospace face so metrics read like instrument readings, not prose.
+ */
+
+:root {
+  --background: #f4f7f6;
+  --foreground: #12161f;
+
+  --card: #ffffff;
+  --card-foreground: #12161f;
+
+  --popover: #ffffff;
+  --popover-foreground: #12161f;
+
+  --primary: #087f78;
+  --primary-foreground: #ffffff;
+
+  --secondary: #e8efed;
+  --secondary-foreground: #12161f;
+
+  --muted: #e9efed;
+  --muted-foreground: #62697c;
+
+  --accent: #dcefeb;
+  --accent-foreground: #075c58;
+
+  --destructive: #d1402f;
+  --destructive-foreground: #ffffff;
+
+  --border: #e2e4ea;
+  --input: #dcdee6;
+  --ring: #087f78;
+
+  --risk-high: #d1402f;
+  --risk-medium: #c17a1f;
+  --risk-low: #1f8f5f;
+
+  --chart-1: #087f78;
+  --chart-2: #c17a1f;
+  --chart-3: #1f8f5f;
+  --chart-4: #3e6fa8;
+  --chart-5: #62697c;
+
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: #0d0f14;
+  --foreground: #e7e9f0;
+
+  --card: #14161d;
+  --card-foreground: #e7e9f0;
+
+  --popover: #14161d;
+  --popover-foreground: #e7e9f0;
+
+  --primary: #6672ff;
+  --primary-foreground: #0d0f14;
+
+  --secondary: #1b1e27;
+  --secondary-foreground: #e7e9f0;
+
+  --muted: #1b1e27;
+  --muted-foreground: #9096a8;
+
+  --accent: #1f2333;
+  --accent-foreground: #c7cbf5;
+
+  --destructive: #ef5b4a;
+  --destructive-foreground: #0d0f14;
+
+  --border: #23262f;
+  --input: #23262f;
+  --ring: #6672ff;
+
+  --risk-high: #ef5b4a;
+  --risk-medium: #e0a141;
+  --risk-low: #3fbf87;
+
+  --chart-1: #6672ff;
+  --chart-2: #e0a141;
+  --chart-3: #3fbf87;
+  --chart-4: #a883f0;
+  --chart-5: #9096a8;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-risk-high: var(--risk-high);
+  --color-risk-medium: var(--risk-medium);
+  --color-risk-low: var(--risk-low);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  --font-mono:
+    ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono",
+    monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--background);
+    background-image: linear-gradient(rgba(8, 127, 120, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(8, 127, 120, 0.035) 1px, transparent 1px);
+    background-size: 32px 32px;
+    color: var(--foreground);
+  }
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .font-tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "dataset_version": "1.0.0",
+  "seed": 42,
+  "config": {
+    "n_users": 100,
+    "n_days": 95,
+    "min_observations": 10000,
+    "seed": 42
+  },
+  "generated_at_unix": 1787230866.3638742,
+  "n_rows": 50170,
+  "n_users": 100,
+  "n_unique_tasks": 50170,
+  "date_range": [
+    "2025-01-01",
+    "2025-04-05"
+  ],
+  "class_balance": {
+    "0": 0.7259118995415587,
+    "1": 0.2740881004584413
+  },
+  "fingerprint_sha256_16": "a931d3f6edac971a",
+  "leakage_check_sampled_users": 5,
+  "leakage_check_status": "passed",
+  "feature_columns": {
+    "categorical": [
+      "task_category",
+      "priority",
+      "location"
+    ],
+    "numeric": [
+      "weekday",
+      "hour",
+      "deadline_distance_hours",
+      "previous_completion_count",
+      "previous_forgetting_count",
+      "historical_completion_rate",
+      "historical_forgetting_rate",
+      "task_frequency",
+      "tasks_today",
+      "interruptions_today",
+      "recent_context_switches",
+      "avg_interruption_duration",
+      "avg_session_duration"
+    ],
+    "target": "forgotten"
+  },
+  "notes": "Each row is a prediction point. All rolling historical features (previous_completion_count, historical_forgetting_rate, etc.) use ONLY information from strictly prior rows for that user; the current row's own 'forgotten' outcome is never included in its own features. Dataset is sorted chronologically globally (date, user_id, hour)."
+}

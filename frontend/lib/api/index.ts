@@ -1,0 +1,15 @@
+export { apiClient, USE_MOCK } from "@/lib/api/client";
+export { tasksApi } from "@/lib/api/services/tasks";
+export type { TasksApi } from "@/lib/api/services/tasks";
+export { analyticsApi } from "@/lib/api/services/analytics";
+export type { AnalyticsApi } from "@/lib/api/services/analytics";
+export { predictionApi } from "@/lib/api/services/prediction";
+export type { PredictionApi } from "@/lib/api/services/prediction";
+export { contextApi } from "@/lib/api/services/context";
+export type { ContextApi } from "@/lib/api/services/context";
+export { recommendationApi } from "@/lib/api/services/recommendation";
+export type { RecommendationApi } from "@/lib/api/services/recommendation";
+export { insightsApi } from "@/lib/api/services/insights";
+export type { InsightsApi } from "@/lib/api/services/insights";
+export { feedbackApi } from "@/lib/api/services/feedback";
+export type { FeedbackApi } from "@/lib/api/services/feedback";

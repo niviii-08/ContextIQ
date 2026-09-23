@@ -1,0 +1,89 @@
+﻿# ContextIQ — root .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+*.venv*/
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
+backend/.env
+data-engine/.env
+forgetting-ml/.env
+context-engine/.env
+intelligence/.env
+frontend/.env.local
+
+# ML artifacts (large binary files)
+forgetting-ml/artifacts/*.joblib
+forgetting-ml/artifacts/*.pkl
+forgetting-ml/artifacts/*.png
+forgetting-ml/artifacts/metrics.json
+context-engine/artifacts/
+
+# Generated datasets (regenerate with scripts)
+forgetting-ml/datasets/tasks_raw.csv
+forgetting-ml/datasets/users.csv
+context-engine/datasets/*.csv
+data-engine/data/synthetic/
+data/*.csv
+
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+logs/
+
+# Node / Next.js
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# Docker volumes & data
+contextiq_db_data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# pytest cache
+.pytest_cache/
+.cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# mypy / type-checking
+.mypy_cache/
+.dmypy.json
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Alembic upgrade outputs (tracked, not ignored)
+# backend/alembic/versions/  <-- DO track these
+
+key.txt
+forgetting-ml/pydeps/
+forgetting-ml/userbase/
