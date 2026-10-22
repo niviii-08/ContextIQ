@@ -28,7 +28,11 @@ const mockFeedbackApi: FeedbackApi = {
 const liveFeedbackApi: FeedbackApi = {
   submit: (input) =>
     apiClient.request<Feedback>("/feedback", { method: "POST", body: input }),
-  submitRecommendationOutcome: (id, outcome, userId = "user-123") =>
+  submitRecommendationOutcome: (
+    id,
+    outcome,
+    userId = process.env.NEXT_PUBLIC_DEV_USER_ID ?? "11111111-1111-1111-1111-111111111111",
+  ) =>
     apiClient.request<Feedback>("/feedback", {
       method: "POST",
       baseUrl: "recommendation",

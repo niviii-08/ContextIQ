@@ -122,6 +122,10 @@ function normalizeError(status: number, payload: unknown): ApiError {
 }
 
 function getDevUserId(): string | null {
+  if (typeof window !== "undefined") {
+    const savedUserId = window.localStorage.getItem("contextiq_user_id");
+    if (savedUserId) return savedUserId;
+  }
   return process.env.NEXT_PUBLIC_DEV_USER_ID ?? null;
 }
 
