@@ -34,7 +34,7 @@ def create_task(
 @router.get("", response_model=list[TaskRead])
 def list_tasks(
     status_filter: TaskStatus | None = Query(default=None, alias="status"),
-    context_tag: str | None = Query(default=None),
+    context_tag: str | None = Query(default=None, max_length=64),
     user_id: uuid.UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
