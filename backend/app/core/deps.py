@@ -46,7 +46,9 @@ def get_current_user_id(
         except (JWTError, ValueError) as exc:
             logger.info("Rejected invalid bearer token: %s", type(exc).__name__)
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials.") from exc
-    if settings.APP_ENV == "production":
+    if settings.APP_ENV != "development":
+        if x_user_id is not None:
+            logger.warning("Rejected X-User-Id header in APP_ENV=%s (development-only fallback)", settings.APP_ENV)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
     if not x_user_id:
         raise HTTPException(

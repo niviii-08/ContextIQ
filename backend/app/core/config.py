@@ -22,13 +22,13 @@ logger = logging.getLogger(__name__)
 def _parse_cors_origins(v: Any) -> list[str]:
     """Parse CORS origins robustly: JSON array, comma-separated string, or Python list."""
     if v is None:
-        return ["http://localhost:3000", "http://127.0.0.1:3000"]
+        return ["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001"]
     if isinstance(v, list):
         return [str(x).strip() for x in v if str(x).strip()]
     if isinstance(v, str):
         s = v.strip()
         if not s:
-            return ["http://localhost:3000", "http://127.0.0.1:3000"]
+            return ["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001"]
         if s.startswith("["):
             try:
                 parsed = json.loads(s)
@@ -71,10 +71,10 @@ class Settings(BaseSettings):
     # --- Supabase specific (used by frontend / future auth integration) ---
     SUPABASE_URL: str = Field(default="")
     SUPABASE_ANON_KEY: str = Field(default="")
-    SUPABASE_SERVICE_ROLE_KEY: str = Field(default="")
+    SUPABASE_SERVICE_ROLE_KEY: str = Field(default="", exclude=True)
 
     # --- Auth / security ---
-    SECRET_KEY: str = Field(default="dev-secret-change-me")
+    SECRET_KEY: str = Field(default="dev-secret-change-me", exclude=True)
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24h
 
     # --- CORS ---

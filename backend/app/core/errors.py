@@ -39,6 +39,11 @@ class ConflictError(ContextIQError):
     default_message = "Resource conflict."
 
 
+class ValidationError(ContextIQError):
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    default_message = "Validation failed."
+
+
 def _error_body(message: str, error_type: str) -> dict:
     return {"error": {"type": error_type, "message": message}}
 
