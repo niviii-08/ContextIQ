@@ -17,7 +17,7 @@ from app.analytics import statistical_analysis as sa
 @pytest.fixture
 def sample_tasks_df():
     """Create sample tasks DataFrame for testing."""
-    dates = pd.date_range(start=datetime.now() - timedelta(days=30), periods=100, freq='H')
+    dates = pd.date_range(start=datetime.now() - timedelta(days=30), periods=100, freq='h')
     return pd.DataFrame({
         "id": range(1, 101),
         "location_id": [1, 2, 3] * 33 + [1],
@@ -35,7 +35,7 @@ def sample_tasks_df():
 @pytest.fixture
 def sample_sessions_df():
     """Create sample sessions DataFrame for testing."""
-    dates = pd.date_range(start=datetime.now() - timedelta(days=30), periods=50, freq='H')
+    dates = pd.date_range(start=datetime.now() - timedelta(days=30), periods=50, freq='h')
     return pd.DataFrame({
         "id": range(1, 51),
         "task_id": range(1, 51),
@@ -53,7 +53,7 @@ def sample_sessions_df():
 @pytest.fixture
 def sample_interruptions_df():
     """Create sample interruptions DataFrame for testing."""
-    dates = pd.date_range(start=datetime.now() - timedelta(days=30), periods=30, freq='H')
+    dates = pd.date_range(start=datetime.now() - timedelta(days=30), periods=30, freq='h')
     return pd.DataFrame({
         "id": range(1, 31),
         "task_id": range(1, 31),
@@ -97,8 +97,10 @@ def test_compute_context_switch_rate(sample_sessions_df):
 
 def test_compute_interruption_rate(sample_interruptions_df, sample_sessions_df):
     """Test interruption rate computation."""
-    result = dm.compute_interruption_rate(sample_interruptions_df, sample_sessions_df)
-    
+    result = dm.compute_interruption_rate(
+        sample_interruptions_df, sample_sessions_df, window_hours=24 * 31
+    )
+
     assert "interruption_rate" in result
     assert "total_interruptions" in result
     assert "active_hours" in result
