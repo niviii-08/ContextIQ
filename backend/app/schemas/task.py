@@ -10,14 +10,14 @@ from app.schemas.base import ORMBase
 
 class TaskBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
+    description: Optional[str] = Field(default=None, max_length=5000)
     priority: TaskPriority = TaskPriority.MEDIUM
     due_at: Optional[datetime] = None
     estimated_minutes: Optional[int] = Field(default=None, gt=0)
     context_location_id: Optional[uuid.UUID] = None
     context_tag: Optional[str] = Field(default=None, max_length=64)
     is_recurring: bool = False
-    recurrence_rule: Optional[str] = None
+    recurrence_rule: Optional[str] = Field(default=None, max_length=255)
     parent_task_id: Optional[uuid.UUID] = None
 
 
@@ -27,7 +27,7 @@ class TaskCreate(TaskBase):
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = Field(default=None, min_length=1, max_length=255)
-    description: Optional[str] = None
+    description: Optional[str] = Field(default=None, max_length=5000)
     status: Optional[TaskStatus] = None
     priority: Optional[TaskPriority] = None
     due_at: Optional[datetime] = None
@@ -35,7 +35,7 @@ class TaskUpdate(BaseModel):
     context_location_id: Optional[uuid.UUID] = None
     context_tag: Optional[str] = Field(default=None, max_length=64)
     is_recurring: Optional[bool] = None
-    recurrence_rule: Optional[str] = None
+    recurrence_rule: Optional[str] = Field(default=None, max_length=255)
     parent_task_id: Optional[uuid.UUID] = None
 
 

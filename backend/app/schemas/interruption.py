@@ -14,7 +14,7 @@ class InterruptionBase(BaseModel):
     occurred_at: Optional[datetime] = None
     duration_seconds: Optional[int] = Field(default=None, ge=0)
     location_id: Optional[uuid.UUID] = None
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(default=None, max_length=5000)
 
 
 class InterruptionCreate(InterruptionBase):

@@ -117,7 +117,7 @@ class TaskAssociationRead(ORMBase):
 class RecommendationFeedbackCreate(BaseModel):
     action: RecommendationFeedbackAction
     suggested_task_id: Optional[uuid.UUID] = None
-    feedback_note: Optional[str] = None
+    feedback_note: Optional[str] = Field(default=None, max_length=5000)
 
 
 class RecommendationFeedbackRead(ORMBase):
