@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional
 
 
@@ -75,23 +75,23 @@ class FrictionScoreResponse(BaseModel):
 class DerivedMetricsResponse(BaseModel):
     user_id: str
     period_days: int
-    forget_risk: Dict[str, float]
-    context_switch_rate: Dict[str, float]
-    interruption_rate: Dict[str, float]
-    recovery_time: Dict[str, float]
-    behavioral_friction_score: Dict[str, float]
-    completion_reliability: Dict[str, float]
-    context_consistency: Dict[str, float]
-    repetition_strength: Dict[str, float]
-    time_lost_to_interruptions: Dict[str, float]
+    forget_risk: Dict[str, Any]
+    context_switch_rate: Dict[str, Any]
+    interruption_rate: Dict[str, Any]
+    recovery_time: Dict[str, Any]
+    behavioral_friction_score: Dict[str, Any]
+    completion_reliability: Dict[str, Any]
+    context_consistency: Dict[str, Any]
+    repetition_strength: Dict[str, Any]
+    time_lost_to_interruptions: Dict[str, Any]
 
 
 class InsightResponse(BaseModel):
     insight_type: str
     message: str
-    evidence: Dict[str, Any]
-    risk_level: str
-    recommendation: str
+    evidence: Dict[str, Any] = Field(default_factory=dict)
+    risk_level: str = "LOW"
+    recommendation: str = ""
     error: Optional[str] = None
 
 
@@ -135,7 +135,7 @@ class StoryAnalyticsResponse(BaseModel):
     evidence: List[Dict[str, Any]]
     risks: List[str]
     recommendations: List[str]
-    data_traceability: Dict[str, str]
+    data_traceability: Dict[str, Any]
 
 
 class TimelineEntry(BaseModel):
