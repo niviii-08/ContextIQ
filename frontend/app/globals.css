@@ -1,95 +1,93 @@
 @import "tailwindcss";
 
 /*
- * ContextIQ Design Tokens
- * ------------------------
- * Palette: cool "instrumentation" neutrals with a single signal-blue
- * accent (used for focus, primary actions, and data highlights) plus a
- * dedicated three-step risk scale (LOW/MEDIUM/HIGH) reused everywhere
- * risk, priority, or friction is communicated. Numbers are set in a
- * monospace face so metrics read like instrument readings, not prose.
+ * ContextIQ — Trademark Luminous Cognitive Design System
+ * --------------------------------------------------
+ * Inspired by the best of Linear, Stripe Press, Raycast, and Apple Health.
+ * High-definition glassmorphism, ethereal ambient chromatic mesh,
+ * precision micro-interactions, rich typographic hierarchy.
  */
 
 :root {
-  --background: #f4f7f6;
-  --foreground: #12161f;
+  --background: #f4f6fb;
+  --foreground: #0c111d;
 
   --card: #ffffff;
-  --card-foreground: #12161f;
+  --card-foreground: #0c111d;
 
   --popover: #ffffff;
-  --popover-foreground: #12161f;
+  --popover-foreground: #0c111d;
 
-  --primary: #087f78;
+  --primary: #4f46e5;
   --primary-foreground: #ffffff;
 
-  --secondary: #e8efed;
-  --secondary-foreground: #12161f;
+  --secondary: #edf2f7;
+  --secondary-foreground: #0c111d;
 
-  --muted: #e9efed;
-  --muted-foreground: #62697c;
+  --muted: #edf2f7;
+  --muted-foreground: #64748b;
 
-  --accent: #dcefeb;
-  --accent-foreground: #075c58;
+  --accent: #eef2ff;
+  --accent-foreground: #4338ca;
 
-  --destructive: #d1402f;
+  --destructive: #f43f5e;
   --destructive-foreground: #ffffff;
 
-  --border: #e2e4ea;
-  --input: #dcdee6;
-  --ring: #087f78;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #6366f1;
 
-  --risk-high: #d1402f;
-  --risk-medium: #c17a1f;
-  --risk-low: #1f8f5f;
+  --risk-high: #f43f5e;
+  --risk-medium: #f59e0b;
+  --risk-low: #10b981;
 
-  --chart-1: #087f78;
-  --chart-2: #c17a1f;
-  --chart-3: #1f8f5f;
-  --chart-4: #3e6fa8;
-  --chart-5: #62697c;
+  --chart-1: #4f46e5;
+  --chart-2: #0ea5e9;
+  --chart-3: #10b981;
+  --chart-4: #8b5cf6;
+  --chart-5: #f59e0b;
 
-  --radius: 0.625rem;
+  --radius: 1rem;
 }
 
 .dark {
-  --background: #0d0f14;
-  --foreground: #e7e9f0;
+  --background: #0b0f19;
+  --foreground: #f8fafc;
 
-  --card: #14161d;
-  --card-foreground: #e7e9f0;
+  --card: #131926;
+  --card-foreground: #f8fafc;
 
-  --popover: #14161d;
-  --popover-foreground: #e7e9f0;
+  --popover: #131926;
+  --popover-foreground: #f8fafc;
 
-  --primary: #6672ff;
-  --primary-foreground: #0d0f14;
+  --primary: #818cf8;
+  --primary-foreground: #0b0f19;
 
-  --secondary: #1b1e27;
-  --secondary-foreground: #e7e9f0;
+  --secondary: #1a2233;
+  --secondary-foreground: #f8fafc;
 
-  --muted: #1b1e27;
-  --muted-foreground: #9096a8;
+  --muted: #172030;
+  --muted-foreground: #94a3b8;
 
-  --accent: #1f2333;
-  --accent-foreground: #c7cbf5;
+  --accent: #1e1b4b;
+  --accent-foreground: #c7d2fe;
 
-  --destructive: #ef5b4a;
-  --destructive-foreground: #0d0f14;
+  --destructive: #fb7185;
+  --destructive-foreground: #ffffff;
 
-  --border: #23262f;
-  --input: #23262f;
-  --ring: #6672ff;
+  --border: #212c3f;
+  --input: #212c3f;
+  --ring: #818cf8;
 
-  --risk-high: #ef5b4a;
-  --risk-medium: #e0a141;
-  --risk-low: #3fbf87;
+  --risk-high: #fb7185;
+  --risk-medium: #fbbf24;
+  --risk-low: #34d399;
 
-  --chart-1: #6672ff;
-  --chart-2: #e0a141;
-  --chart-3: #3fbf87;
-  --chart-4: #a883f0;
-  --chart-5: #9096a8;
+  --chart-1: #818cf8;
+  --chart-2: #38bdf8;
+  --chart-3: #34d399;
+  --chart-4: #a78bfa;
+  --chart-5: #fbbf24;
 }
 
 @theme inline {
@@ -124,40 +122,96 @@
   --color-chart-5: var(--chart-5);
 
   --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
+  --radius-2xl: calc(var(--radius) + 12px);
 
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif;
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono:
-    ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono",
-    monospace;
+    "SF Mono", "JetBrains Mono", Menlo, Consolas, Monaco, monospace;
 }
 
 @layer base {
   * {
     border-color: var(--border);
   }
+
   body {
     background-color: var(--background);
-    background-image: linear-gradient(rgba(8, 127, 120, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(8, 127, 120, 0.035) 1px, transparent 1px);
-    background-size: 32px 32px;
     color: var(--foreground);
+    letter-spacing: -0.014em;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
   ::selection {
-    background: var(--primary);
-    color: var(--primary-foreground);
+    background: #4f46e5;
+    color: #ffffff;
   }
+
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
 }
 
+/* Glassmorphism & Depth Utility Classes */
 @layer utilities {
   .font-tabular {
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Frosted Glass Card */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(226, 232, 240, 0.85);
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+  }
+
+  .dark .glass-card {
+    background: rgba(19, 25, 38, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(33, 44, 63, 0.8);
+    box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  }
+
+  /* Trademark Interactive Hover Lift */
+  .card-hover-lift {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .card-hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 34px -4px rgba(15, 23, 42, 0.09), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+    border-color: rgba(99, 102, 241, 0.35);
+  }
+
+  .dark .card-hover-lift:hover {
+    box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.55);
+    border-color: rgba(129, 140, 248, 0.4);
+  }
+
+  /* Shimmer Beam Animation */
+  .border-beam {
+    position: relative;
+    overflow: hidden;
+  }
+  .border-beam::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%; width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.8), transparent);
+    animation: beam 3.5s infinite;
+  }
+
+  @keyframes beam {
+    0% { left: -100%; }
+    50%, 100% { left: 100%; }
   }
 }

@@ -48,16 +48,28 @@ export function useApiData<T>(
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus("loading");
     setError(null);
-    fetcherRef.current().then((result) => {
-      if (id !== requestId.current) return; // stale response, ignore
-      if (result.error) {
-        setError(result.error);
+    fetcherRef
+      .current()
+      .then((result) => {
+        if (id !== requestId.current) return;
+        if (result.error) {
+          setError(result.error);
+          setStatus("error");
+        } else {
+          setData(result.data);
+          setStatus("success");
+        }
+      })
+      .catch((err: unknown) => {
+        if (id !== requestId.current) return;
+        const message = err instanceof Error ? err.message : String(err);
+        setError({
+          code: "NETWORK_ERROR",
+          message: `Network error: ${message}`,
+          status: 0,
+        });
         setStatus("error");
-      } else {
-        setData(result.data);
-        setStatus("success");
-      }
-    });
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reloadToken, ...deps]);
 

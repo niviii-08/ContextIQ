@@ -1,8 +1,8 @@
 import { EnhancedDashboard } from "@/components/dashboard/enhanced-dashboard";
 
 export default function DashboardPage() {
-  // In a real app, this would come from authentication
-  const userId = "user-123"; 
+  const userId =
+    process.env.NEXT_PUBLIC_DEV_USER_ID ?? "11111111-1111-1111-1111-111111111111"; 
   
   return (
     <div className="space-y-6">
