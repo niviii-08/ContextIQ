@@ -30,9 +30,9 @@ export const navItems: NavItem[] = [
   },
   {
     href: "/context",
-    label: "Context Intelligence",
+    label: "Context & Micro-Delays",
     icon: Radar,
-    description: "Focus, interruptions, and switching",
+    description: "Focus, interruptions, and recovery lag",
   },
   {
     href: "/predictions",

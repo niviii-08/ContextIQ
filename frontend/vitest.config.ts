@@ -3,12 +3,12 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default defineConfig({
+  root: path.resolve(__dirname),
   plugins: [react()],
   test: {
     environment: "jsdom",
     setupFiles: ["./tests/setup.ts"],
     globals: true,
-    css: true,
   },
   resolve: {
     alias: {
