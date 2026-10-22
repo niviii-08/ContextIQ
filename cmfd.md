@@ -66,7 +66,7 @@ Copy-Item .env.example .env
 uvicorn app.main:app --reload --port 8004
 ```
 
-### 6. Frontend (Port 3000)
+### 6. Frontend (Port 3001)
 ```powershell
 cd frontend
 npm install

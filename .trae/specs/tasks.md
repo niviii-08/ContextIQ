@@ -1,140 +1,160 @@
-# ContextIQ Tiered Improvements (Phase 1) - Implementation Plan
+# ContextIQ - Consistency, Reliability & Test-Portability Improvements (Round 2) - Implementation Plan
 
-## Task 1: Build Backend Orchestrator Service with forget-risk prediction pipeline
-- **Status**: `pending`
+## Task 1: Fix verify_wip.py import crash — add DATABASE_URL SQLite override before app imports
+- **Status**: `completed`
 - **Priority**: high
 - **Depends On**: None
 - **Description**:
-  - Create `backend/app/services/orchestrator.py` exposing an async `Orchestrator` class with:
-    - `compute_forget_risk_for_task(task_id: UUID, user_id: UUID, db: Session)` — reads the task row, builds task features compatible with `forgetting-ml/app/schemas.py:TaskFeatures`, POSTs to `{FORGETTING_ML_URL}/api/v1/predictions/forgetting`, then inserts a new Prediction row (invalidating any prior prediction for the same task_id by setting its `valid_until=now`). Uses `httpx.AsyncClient` with config timeout. Logs warnings on HTTP errors but never raises.
-    - `on_task_created(task_id, user_id, db)` — schedules forget-risk compute.
-    - `on_task_updated(task_id, user_id, db)` — recomputes when status changes.
-    - `on_task_event(event_id, task_id, user_id, db)` — placeholder that triggers a recompute only for terminal events (COMPLETED / FORGOTTEN / CANCELLED).
-  - Add or confirm a backend write path for Predictions (a service function `prediction_service.create_prediction()` or inline ORM create). Keep append-only semantics; on insert expire any prior prediction for the same `task_id + FORGET_RISK` type.
+  - In `backend/verify_wip.py`, insert a new line between line 6 (`os.environ.setdefault("APP_ENV", ...)`) and line 7 (`sys.path.insert(...)`) that reads:
+    ```python
+    os.environ.setdefault("DATABASE_URL", "sqlite:///./_verify_wip.db")
+    ```
+  - This must come **before** the first `from app.main import app` (line 10) because `app/db/session.py` calls `get_settings()` at import time (line 16) and then `create_engine(settings.DATABASE_URL)` on line 18.
+  - Use the path `_verify_wip.db` (distinct from test_health.py's `_test_backend.db`) so the two scripts never share SQLite state on disk.
+  - Do not change any other line in verify_wip.py; all check()/TestClient assertions remain identical.
 - **Acceptance Criteria Addressed**: AC-1
 - **Test Requirements**:
-  - `rule` TR-1.1: `from app.services.orchestrator import Orchestrator` imports without error. A unit test patches `httpx.AsyncClient.post` to return a fixed prediction response and asserts exactly one `Prediction` row is created with `valid_from` set, confidence in [0,1], and `prediction_type=FORGET_RISK`. If a prior prediction existed for the same task, the prior row has non-null `valid_until` after the call.
-  - `rule` TR-1.2: When the ML service POST raises a network error (patched with an httpx exception), the orchestrator call returns normally (no exception raised) and a `logging.warning` is emitted containing the substring "orchestrator" and "forget".
-- **Notes**: The predictions endpoint `GET /predictions/forgetting/task/{task_id}` already exists in [predictions.py](file:///c:/Users/Neevetha%20N/Downloads/DATAPROJECT/contextiq-complete/backend/app/api/v1/predictions.py#L63-L91). httpx is already in backend requirements.
+  - `rule` TR-1.1: Run `cd backend ; python verify_wip.py` in an environment without psycopg installed (simulate by temporarily renaming the psycopg folder if present, or confirm by inspecting the script path: the new setdefault line is present before any `from app.* import`). Confirm the script progresses past import and prints "=== TR-2 Predictions Route ==="; no `ModuleNotFoundError: No module named 'psycopg'` occurs.
+  - `rule` TR-1.2: After the script completes once, re-run it; confirm exit code matches the first run and no `sqlite3.OperationalError: database is locked` appears (idempotency).
+- **Notes**: If SQLite files are created by a test run, they are git-ignored sidecars like `_test_backend.db` already is.
+- **Completion Evidence**:
+  - TR-1.1 PASS: `verify_wip.py` runs to completion with exit code 0 and prints `=== TR-2 Predictions Route ===`; zero occurrences of `ModuleNotFoundError: No module named 'psycopg'` (verified 2026-03-29 via sandbox run)
+  - TR-1.2 PASS: Re-run of `verify_wip.py` produced identical `RESULT: 10/10 PASSED, 0 FAILED` with exit code 0; no "database is locked" message appeared (verified 2026-03-29 idempotency run)
+  - Source evidence: new line 7 in `verify_wip.py` = `os.environ.setdefault("DATABASE_URL", "sqlite:///./_verify_wip.db")` positioned before first `from app.main import app` on line 10
 
-## Task 2: Wire orchestrator hooks into task creation flow with BackgroundTasks
-- **Status**: `pending`
-- **Priority**: high
-- **Depends On**: Task 1
-- **Description**:
-  - Modify `backend/app/api/v1/tasks.py` `create_task` to accept `background_tasks: BackgroundTasks` from FastAPI. After calling `task_service.create_task`, schedule `orchestrator.compute_forget_risk_for_task(task.id, user_id, db)` using a wrapper function that injects a fresh DB session (do not reuse the request-scoped `db` session, because `background_tasks` run after the response is sent and the session may be closed).
-  - Modify `task_service.update_task` — if status is changed to a terminal state (COMPLETED/FORGOTTEN/CANCELLED), schedule an orchestrator recompute via `background_tasks` (the `update_task` API endpoint will need the same BackgroundTasks parameter injection).
-  - Modify `task_event_service.create_task_event` — if the event_type is terminal (COMPLETED/FORGOTTEN/CANCELLED), schedule orchestrator recompute.
-- **Acceptance Criteria Addressed**: AC-1
-- **Test Requirements**:
-  - `rule` TR-2.1: Calling `POST /tasks` (via TestClient) with auth header returns 201 **before** the background task completes (verify by patching orchestrator with an `await asyncio.sleep(5)` and confirming response arrives under 1 second). The created task row exists in the DB synchronously.
-  - `rule` TR-2.2: Patching the task router's background task scheduler and calling create_task verifies `background_tasks.add_task` was called exactly once with the forget-risk function and the new task id.
-- **Notes**: For fresh DB sessions in background tasks, import `get_db`'s underlying `SessionLocal` factory or use `with Session(engine)` from db.session. Do not pass the request-scoped Depends `db` into a background task closure.
-
-## Task 3: Add analytics endpoints for context-switch timeline and task/context heatmap
-- **Status**: `pending`
+## Task 2: Add ValidationError domain class (422) to errors.py
+- **Status**: `completed`
 - **Priority**: high
 - **Depends On**: None
 - **Description**:
-  - In `data-engine/app/api/analytics.py`, add two new endpoints:
-    1. `GET /analytics/context-switch-timeline` — params `user_id`, `period_days`. Returns `ContextSwitchTimelineResponse` with `timeline: list[{timestamp: ISO string, task_id: str, task_title: str, location_id: str|null, location_label: str|null, context_tag: str|null, event_type: str, is_interruption: bool}]`. Build the series by concatenating task_events sorted by occurred_at, joining with interruptions table on overlapping time to mark interruption events, and joining location labels.
-    2. `GET /analytics/task-context-heatmap` — params `user_id`, `period_days`, `value_metric={"completion_rate"|"forget_rate" default="completion_rate"}`. Returns `TaskContextHeatmapResponse` with `rows: list[str]` (task context_tag/category values), `columns: list[str]` (hour buckets "00".."23" or 4-hour buckets "00-03" etc.), and `cells: list[list[float|null]]` — cell[r][c] is the metric for row r in column c, or null if sample size < 3. Also return `sample_sizes: list[list[int]]` so the frontend can show "n=5" tooltips.
-  - In `backend/app/api/v1/analytics.py` (create this proxy router if it does not exist; or add to the existing analytics module), add corresponding proxied endpoints that call the data-engine URLs internally and return the normalized response. This forward-positions the API-gateway pattern without implementing the full refactor yet.
-  - In `frontend/lib/api/services/analytics.ts`, add typed methods:
-    - `getContextSwitchTimeline(userId, periodDays): Promise<ApiResult<TimelineEntry[]>>`
-    - `getTaskContextHeatmap(userId, periodDays, metric?): Promise<ApiResult<HeatmapData>>`
-  - Define the matching TypeScript interfaces in analytics.ts (TimelineEntry, HeatmapData).
-- **Acceptance Criteria Addressed**: AC-2, AC-3
-- **Test Requirements**:
-  - `rule` TR-3.1: `GET /analytics/context-switch-timeline` with a seeded test user having ≥ 3 task events returns a timeline array with ≥ 3 entries sorted ascending by timestamp; `is_interruption` is a boolean on every entry.
-  - `rule` TR-3.2: `GET /analytics/task-context-heatmap` returns `rows.length × columns.length === cells.flat().length` (rectangular grid shape). Every non-null cell value is in [0, 1] for rate metrics. `sample_sizes` has the same shape as `cells`.
-- **Notes**: Confirm the existing backend `analytics.py` router. If it currently hits data-engine directly via internal httpx, match the existing proxy pattern. If it mirrors data-engine code locally, prefer adding the proxied call through backend so the frontend only needs `baseUrl: "analytics"` (already configured in client.ts BASE_URLS).
-
-## Task 4: Implement Context-switch timeline and Task/Context heatmap in enhanced-dashboard
-- **Status**: `pending`
-- **Priority**: high
-- **Depends On**: Task 3
-- **Description**:
-  - In `EnhancedDashboard` component at [enhanced-dashboard.tsx](file:///c:/Users/Neevetha%20N/Downloads/DATAPROJECT/contextiq-complete/frontend/components/dashboard/enhanced-dashboard.tsx#L89-L90):
-    - Add two more `useState` + `loadAnalytics` Promise.all fetches for timeline and heatmap.
-    - Replace `<UnavailableVisual title="Context-switch timeline" .../>` with a `ContextSwitchTimelineCard` component. Render a Recharts AreaChart (or ComposedChart) with x = `timestamp`, y = a nominal task id (or 0/1 presence — any encoding that visualizes switches across time). Color areas by `location_label`. Render vertical `ReferenceLine` for each `is_interruption=true` entry, with a tooltip.
-    - Replace `<UnavailableVisual title="Task / context heatmap" .../>` with a `TaskContextHeatmapCard` component. Render a CSS-grid or Recharts-based heatmap. Each cell shows the numeric rate as a percentage label; background color intensity follows the rate. Hover tooltip shows `sample_size=n`.
-    - Both cards render a small "Insufficient data" inline state (not the full `EmptyState` component) when rows/cells < 3 total valid.
-  - Add the new components as inner functions inside enhanced-dashboard.tsx (pattern matches `FrictionSourcesCard`, `ForgettingRiskCard`, etc.).
-- **Acceptance Criteria Addressed**: AC-2, AC-3, AC-6
-- **Test Requirements**:
-  - `rule` TR-4.1: Rendering the dashboard with mock timeline data (≥3 entries, ≥1 interruption) produces a card with title "Context-switch timeline" containing exactly one `<svg>` (the Recharts chart). The interruption vertical marker(s) are rendered as `<line>` or `<rect>` elements with an interruption-related class or aria-label.
-  - `rule` TR-4.2: Rendering the dashboard with heatmap rows=["A","B","C"], columns=["00-03","04-07"], and valid cells=[[0.1,0.5],[0.9,null],[0.3,0.7]] produces 6 grid cell elements (null rendered as empty cell with "-"); non-null cells have a `style.background` whose channel varies (visually: 0.9 cell should be darker than 0.1 cell when sampled via getComputedStyle).
-  - `rubric` TR-4.3 (AC-6 rubric): Chart component completeness. Dimension = label/tooltip/empty-state quality. Scale 1–5; anchors 1=no labels/no tooltip, 3=axis labels but no cell tooltips or empty state, 5=x-axis and y-axis labels visible on both charts, cell hover shows tooltip with value + sample size on heatmap, interruption marker tooltip shows "Interruption at [time]", empty state card shows "Insufficient data for this view — you need ≥ 3 events."; threshold >= 4. Evidence: manual screenshot review + component source code review for `<Tooltip>` wrapper presence and `<Label>`/axis props on Recharts components.
-- **Notes**: Import Recharts components already used in the codebase (e.g., check focus-interruption-chart.tsx for the AreaChart/Tooltip/ReferenceLine imports pattern to keep consistency).
-
-## Task 5: Create recommendation_feedback ORM model + Alembic migration
-- **Status**: `pending`
-- **Priority**: high
-- **Depends On**: None
-- **Description**:
-  - Create `backend/app/models/recommendation_feedback.py`:
-    - Add enum `RecommendationFeedbackAction(str, Enum): ACCEPTED = "ACCEPTED"; DISMISSED = "DISMISSED"; DEFERRED = "DEFERRED"` to `enums.py` if not present, OR inline in the model with Postgres native enum.
-    - Model columns: `id` (UUID PK), `recommendation_id` (UUID FK → recommendations.id, CASCADE), `user_id` (UUID FK → users.id, CASCADE), `action` (enum, indexed), `suggested_task_id` (UUID FK → tasks.id, SET NULL, nullable), `feedback_note` (Text, nullable), `created_at` (datetime, default=utcnow).
-    - Register the model in `backend/app/models/__init__.py`.
-  - Generate an Alembic migration `backend/alembic/versions/XXX_add_recommendation_feedback_table.py` that creates the enum type, the table, and indices on `(recommendation_id)`, `(user_id)`, `(action)`.
-  - Create a matching schema `RecommendationFeedbackCreate` / `RecommendationFeedbackRead` in `schemas/` or in the new router module.
-- **Acceptance Criteria Addressed**: AC-4 (database schema part)
-- **Test Requirements**:
-  - `rule` TR-5.1: Applying the Alembic migration against a fresh Postgres DB results in the `recommendation_feedback` table existing with all four FK columns, an `action` enum column, and the three specified DB indices.
-  - `rule` TR-5.2: Instantiating `RecommendationFeedback(user_id=..., recommendation_id=..., action="ACCEPTED")` via ORM `db.add + commit` succeeds; selecting it back reads the same values. FK to a non-existent recommendation_id correctly raises an IntegrityError.
-- **Notes**: Apply the same `UUIDPKMixin`, `utcnow`, `Base` pattern as `prediction.py` and `recommendation.py`.
-
-## Task 6: Implement recommendation feedback endpoint with auto-task-creation
-- **Status**: `pending`
-- **Priority**: high
-- **Depends On**: Task 5
-- **Description**:
-  - Add to backend `api/v1/router.py` (or confirm it is already there) a new router module `recommendations.py` at `backend/app/api/v1/recommendations.py`:
-    - `POST /recommendations/{recommendation_id}/feedback` — request body `{action: RecommendationFeedbackAction, prefill_context_tag?: string, prefill_location_id?: UUID}`.
-    - Handler validates the recommendation belongs to the current user via `get_current_user_id`, then:
-      1. Creates a `RecommendationFeedback` row.
-      2. If `action == ACCEPTED`: reads the parent recommendation title/message, calls `task_service.create_task` with a synthesized `TaskCreate` payload (title from rec.title or the suggested task string, description from rec.message, context_tag = prefill_context_tag or rec.message context, priority MEDIUM, due_at = now + 24h default). Stores the new task's UUID into `suggested_task_id` on the feedback row.
-      3. Updates the parent `recommendations.status` to ACCEPTED/DISMISSED/EXPIRED (map DEFERRED → keep PENDING or set to DISMISSED per roadmap), sets `responded_at=now`, on ACCEPTED also sets `shown_at` if null.
-    - Returns a 201 with the created feedback row plus the synthesized task_id (if any).
-  - Also add a simple `GET /recommendations` listing endpoint (proxied through backend to context-engine or returned from the backend recommendations table) so the frontend `recommendationApi.list()` can use `baseUrl: "core"` instead of hitting context-engine:8003 directly — partial API-gateway alignment.
-  - Update the frontend `lib/api/services/recommendation.ts` `liveRecommendationApi` methods to call the NEW backend endpoints (not context-engine directly):
-    - `accept(id)` → `POST /recommendations/{id}/feedback {action:"ACCEPTED"}` (not `/recommendations/{id}/accept`)
-    - `dismiss(id)` → `POST /recommendations/{id}/feedback {action:"DISMISSED"}`
-    - `list()` → `GET /recommendations` with `baseUrl: "core"`
-- **Acceptance Criteria Addressed**: AC-4 (full endpoint behavior)
-- **Test Requirements**:
-  - `rule` TR-6.1: POST `/recommendations/{id}/feedback` with `{action:"ACCEPTED"}` against a seed recommendation creates exactly 1 feedback row with `action=ACCEPTED`, exactly 1 new task row, and the feedback's `suggested_task_id` equals the new task UUID. The recommendation row has `status=ACCEPTED` and `responded_at` is non-null.
-  - `rule` TR-6.2: Same call with `{action:"DISMISSED"}` creates 1 feedback row, 0 new task rows (suggested_task_id IS NULL), recommendation status = DISMISSED.
-- **Notes**: The existing recommendations-panel.tsx already calls `recommendationApi.accept` and `feedbackApi.submitRecommendationOutcome` separately; we can leave feedbackApi as a wrapper or unify it, but the backend truth must be the single `/feedback` call.
-
-## Task 7: Association mining acceptance-rate weighting in context-engine
-- **Status**: `pending`
-- **Priority**: medium
-- **Depends On**: Task 6 (feedback data model exists)
-- **Description**:
-  - In `context-engine/ml/associations/mining.py`, modify the rule-scoring pipeline to accept an optional `acceptance_weights: dict[tuple[str, str], float]` parameter mapping `(antecedent_itemset_frozenset, consequent_itemset_frozenset)` → a multiplier in [1, 5].
-  - When computing the final `confidence` for an association rule, multiply the raw computed confidence by `min(acceptance_weights.get((ant, cons), 1.0), 5.0)` (cap at 5× to avoid runaway). Also add a `weighted_confidence` field in the rule output dict, storing the post-multiplied value alongside the original `confidence`.
-  - In `context-engine/ml/associations/recommender.py`, use `weighted_confidence` (falling back to raw `confidence`) for ranking / `prioritize_recommendations`.
-  - Add a helper `acceptance_rate_from_feedback(feedback_rows: list[dict]) -> weights` in mining.py that, given flat feedback rows of `{antecedent: [items], consequent: [items], action: ACCEPTED|DISMISSED|DEFERRED}`, computes per-rule `acceptance_rate = accepted / (accepted + dismissed)`, then maps to a multiplier `weight = 1.0 + 4.0 * acceptance_rate` (so 0% = 1×, 100% = 5×).
-  - In context-engine `state.py` / `store`, add an in-memory `acceptance_weights` dict and a method `store.record_feedback(antecedent, consequent, action)` that accumulates counts and recomputes weights.
+  - In `backend/app/core/errors.py`, after the `ConflictError` class (line 40) and before the `_error_body` helper (line 42), insert a new class:
+    ```python
+    class ValidationError(ContextIQError):
+        status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+        default_message = "Validation failed."
+    ```
+  - Do not modify existing `handle_validation_error` (which wraps `RequestValidationError`). The `ValidationError` class is automatically handled by the existing `handle_contextiq_error` handler (first handler registered), which covers all `ContextIQError` subclasses, so no new exception-handler registration is required.
 - **Acceptance Criteria Addressed**: AC-5
 - **Test Requirements**:
-  - `rule` TR-7.1 (AC-5): Unit test `test_weighted_confidence_increases_with_feedback` — creates a fixed transaction set, runs mining with zero feedback (baseline confidence C0 for the target rule), runs mining with the same transactions plus injected feedback of 3 ACCEPTED + 0 DISMISSED for exactly the target rule's (ant, cons) pair, asserts `weighted_confidence_with_feedback > C0`.
-  - `rule` TR-7.2: The cap at 5× is honored: mining with a synthetic 10× weight manually injected still yields `weighted_confidence <= 5.0 * raw_confidence`.
-- **Notes**: Context-engine is standalone (not connected to Postgres feedback table in Phase 1). For this phase, accept feedback counts via an in-memory API — add `POST /api/v1/recommendations/feedback-sync` to context-engine's router that accepts `[{antecedent, consequent, action}]` and calls `store.record_feedback`. The backend orchestrator is not required to call this in Phase 1; the test-only path is sufficient evidence.
+  - `rule` TR-2.1: Direct import + instantiation: `from app.core.errors import ValidationError; e = ValidationError("custom"); assert e.status_code == 422; assert e.default_message == "Validation failed."; assert e.message == "custom"`
+  - `rule` TR-2.2: Via a minimal FastAPI TestClient app that registers the handlers and a route that raises `ValidationError("bad")`, assert response.status_code == 422 and `body["error"]["type"] == "ValidationError"` and `body["error"]["message"] == "bad"`
+- **Notes**: Keep alphabetical ordering of error classes (NotFound → Forbidden → Conflict → Validation); actual order in file doesn't matter to Python but keeping them grouped is clearer.
+- **Completion Evidence**:
+  - TR-2.1 PASS: In `backend/_self_check.py` section "AC-5", direct instantiation of `ValidationError("custom msg")` asserts `status_code == 422`, `default_message == "Validation failed."`, `message == "custom msg"` — all passed (exit 0, output: "AC-5: ValidationError attrs OK  -> AC-5 PASS")
+  - TR-2.2 PASS: `backend/_self_check.py` "AC-3" calls `/api/v1/predictions/forgetting?risk_level=INVALID_LEVEL` (which raises ValidationError inside `list_predictions`); asserts status 422 and `body["error"]["type"] == "ValidationError"` and `body["error"]["message"]` contains "Invalid risk_level" — all passed (output: "AC-3 PASS (ValidationError envelope)")
+  - AC-5 PASS: ValidationError correctly routes through `handle_contextiq_error` handler — confirmed because envelope is `{"error": {...}}` shape, NOT raw `{"detail": ...}` Starlette shape
+  - Source evidence: errors.py lines 42-44
 
-## Task 8: Frontend recommendation acceptance-count hint and feedback API wiring
-- **Status**: `pending`
-- **Priority**: medium
-- **Depends On**: Task 6, Task 7
+## Task 3: Use NotFoundError + ValidationError in predictions.py (remove raw HTTPException for 404/422)
+- **Status**: `completed`
+- **Priority**: high
+- **Depends On**: Task 2 (ValidationError must exist to import it)
 - **Description**:
-  - Extend the backend `GET /recommendations` list endpoint response to embed an aggregated `acceptance_stats: {accepted: int, dismissed: int, deferred: int}` field per recommendation row (grouped by the rule's semantic key — recommendation title + triggering pattern, since feedback rows are per-recommendation-instance).
-  - In `frontend/lib/api/services/recommendation.ts`, plumb the `acceptance_stats` field through `normalizeRecommendation` into the `Recommendation` type (add field to types).
-  - In `RecommendationCard` component at [recommendation-card.tsx](file:///c:/Users/Neevetha%20N/Downloads/DATAPROJECT/contextiq-complete/frontend/components/recommendations/recommendation-card.tsx), render a small badge under the evidence line: e.g., "Accepted 3/3 times" when total > 0. Color green when acceptance_rate ≥ 0.8, grey otherwise.
-  - Verify the full frontend flow: create a recommendation via context-engine or seed data → "Accept" button triggers `POST /feedback` → refetch → new task appears in the tasks list, recommendation status becomes ACCEPTED, acceptance badge updates on next list refresh.
-- **Acceptance Criteria Addressed**: AC-4 (UI wiring part), FR-3.5
+  - In `backend/app/api/v1/predictions.py`:
+    1. At the imports section (top of file), **remove** `from fastapi import ... HTTPException ...` IF it's only used for the 404/422 cases; check: current imports include `HTTPException` from line 4, `Query` from line 4, `Depends` from line 4. Leave `APIRouter`, `Depends`, `Query` in place.
+    2. Add a new import: `from app.core.errors import NotFoundError, ValidationError` after existing imports.
+    3. In `list_predictions` around lines 60-63, replace the block that reads:
+       ```python
+       raise HTTPException(
+           status_code=422,
+           detail=f"Invalid risk_level: '{effective_risk}'. Allowed values: LOW, MEDIUM, HIGH.",
+       )
+       ```
+       with:
+       ```python
+       raise ValidationError(f"Invalid risk_level: '{effective_risk}'. Allowed values: LOW, MEDIUM, HIGH.")
+       ```
+    4. In `get_task_prediction` around lines 107-111, replace:
+       ```python
+       if not p:
+           raise HTTPException(
+               status_code=404,
+               detail="Prediction not found for task.",
+           )
+       ```
+       with:
+       ```python
+       if not p:
+           raise NotFoundError("Prediction not found for task.")
+       ```
+- **Acceptance Criteria Addressed**: AC-2, AC-3
 - **Test Requirements**:
-  - `rule` TR-8.1: A recommendation with acceptance_stats={accepted:3, dismissed:0, deferred:0} rendered via `RecommendationCard` includes the text "Accepted 3/3" in its DOM. A recommendation with all-zero stats does not render the badge.
-  - `rubric` TR-8.2: End-to-end workflow cohesion. Dimension = click Accept on a card → side effects are immediately visible. Scale 1–5; anchors 1=nothing visible happens, 3=task created but old recommendation still shows as PENDING until manual refresh, 5=after clicking Accept the card animates/badges to status ACCEPTED and a toast banner appears confirming the new task title within 500ms (background optimistic update). Evidence: component-level test with mocked API responses.
-- **Notes**: Total count denominator for the N/M display should be `accepted + dismissed` (ignore deferred) per typical conversion-rate conventions.
+  - `rule` TR-3.1 (covers AC-2): Via verify_wip.py TR-2.2 (missing UUID → 404 scenario), after fix confirm the response body `r2.json()` has `r2.json()["error"]["type"] == "NotFoundError"` in addition to status 404.
+  - `rule` TR-3.2 (covers AC-3): Via verify_wip.py TR-2.3 (`risk_level=INVALID → 422`), confirm the response body has `r3.json()["error"]["type"] == "ValidationError"` in addition to status 422.
+  - `rubric` TR-3.3: Dimension = "import cleanliness"; Scale 0-2; Anchors: `0` = raw `HTTPException` still imported AND used in the file, `1` = HTTPException imported but unused (lint warning), `2` = HTTPException removed from imports (no longer needed), replaced with domain errors; Threshold >= 2; Evidence = source of predictions.py import block after edits.
+- **Completion Evidence**:
+  - TR-3.1 (AC-2) PASS: `_self_check.py` "AC-2" block calls `/predictions/forgetting/task/<missing-uuid>` with MockSession returning None; asserts status=404, `body["error"]["type"] == "NotFoundError"`, message contains "Prediction not found for task." — output: "AC-2 PASS (NotFoundError envelope)"
+  - TR-3.2 (AC-3) PASS: `_self_check.py` "AC-3" block calls `/predictions/forgetting?risk_level=INVALID_LEVEL`; asserts status=422, `body["error"]["type"] == "ValidationError"` — output: "AC-3 PASS (ValidationError envelope)"
+  - TR-3.3 (Rubric) SCORE: **2/2** (threshold >=2 achieved)
+    - Evidence 1: `grep HTTPException backend/app/api/v1/predictions.py` returned 0 matches
+    - Evidence 2: predictions.py import block now reads `from fastapi import APIRouter, Depends, Query` (HTTPException fully removed from imports, not lingering as unused lint warning)
+    - Evidence 3: domain classes used throughout — `raise ValidationError(...)` at line 61, `raise NotFoundError(...)` at line 107
+  - verify_wip.py alignment: TR-2.2, TR-2.3, TR-2.5, TR-2.4 all reported OK in final 10/10 run
+
+## Task 4: Use NotFoundError in recommendations.py (remove raw HTTPException for 404)
+- **Status**: `completed`
+- **Priority**: medium
+- **Depends On**: None
+- **Description**:
+  - In `backend/app/api/v1/recommendations.py`:
+    1. At the top of the file, check current imports. Line 6 imports `HTTPException, status` from FastAPI. `status` is still used on line 88 (`status_code=status.HTTP_201_CREATED`), so only remove `HTTPException` from the import if no other usage remains.
+    2. Add import: `from app.core.errors import NotFoundError`
+    3. In `post_recommendation_feedback` around lines 101-105, replace:
+       ```python
+       if recommendation is None:
+           raise HTTPException(
+               status_code=status.HTTP_404_NOT_FOUND,
+               detail="Recommendation not found.",
+           )
+       ```
+       with:
+       ```python
+       if recommendation is None:
+           raise NotFoundError("Recommendation not found.")
+       ```
+    4. If `HTTPException` is now unused in the import line, remove it (leaving `APIRouter, Depends, status` as needed).
+- **Acceptance Criteria Addressed**: AC-4
+- **Test Requirements**:
+  - `rule` TR-4.1 (covers AC-4): Build a TestClient call with dev auth overrides, a MockSession that returns None on recommendation select, and POST to `/recommendations/<uuid>/feedback` with a valid `{action: "ACCEPTED"}` body; assert status 404 and `body["error"]["type"] == "NotFoundError"` and message matches.
+  - `rule` TR-4.2: Confirm recommendations.py code inspection check in verify_wip.py section TR-4.4 continues to pass (logger exists, safe_location_id, ownership_select are untouched).
+- **Completion Evidence**:
+  - TR-4.1 (AC-4) PASS: `_self_check.py` "AC-4" block calls `POST /recommendations/<uuid>/feedback` with MockSession returning None; asserts status=404, `body["error"]["type"] == "NotFoundError"`, `message == "Recommendation not found."` — output: "AC-4 PASS (recommendations NotFoundError envelope)"
+  - TR-4.2 PASS: verify_wip.py final run reports: `[OK] TR-4.4 recommendations: logger=True, safe_var=True, ownership_select=True, debug_log_str=True` — all structural checks unchanged; no refactor regressions
+  - Import cleanliness: `grep HTTPException backend/app/api/v1/recommendations.py` returned 0 matches (HTTPException fully removed from imports; `status` retained because it is used elsewhere in the file)
+  - Supplementary improvement (AC-7 rubric): `users.py` register endpoint also upgraded from raw `HTTPException(404)` to `NotFoundError("Not found")` — see users.py lines 8 and 31
+
+## Task 5: Add mlxtend importorskip to context-engine tests/test_recommender.py
+- **Status**: `completed`
+- **Priority**: medium
+- **Depends On**: None
+- **Description**:
+  - Read the top of `context-engine/tests/test_association_mining.py` to confirm the exact importorskip pattern used in the other test files (pattern should be: `pytest.importorskip("mlxtend", reason="mlxtend optional dependency not installed")`).
+  - Edit `context-engine/tests/test_recommender.py` and place the same `pytest.importorskip(...)` call as the **first module-level executable statement** following the imports block (i.e., after `import pytest` / `from ... import ...` lines but before any `def test_...` functions or any `pytestmark = ...` lines). This causes pytest to skip the ENTIRE module (not individual functions) when mlxtend is missing, matching the behavior of test_association_mining.py and test_acceptance_weights.py.
+  - Do not modify any test function bodies or fixture definitions.
+- **Acceptance Criteria Addressed**: AC-6
+- **Test Requirements**:
+  - `rule` TR-5.1: In a fresh Python process, simulate missing mlxtend by setting `sys.modules['mlxtend'] = None` before importing, or run in a venv without it; execute `pytest tests/test_recommender.py -q`; confirm output contains "SKIPPED" lines with reason including "mlxtend optional dependency not installed" and exits with code 0 (or 5, "no tests ran"); zero occurrences of "NotImplementedError" and zero "ERROR" collection failures.
+  - `rule` TR-5.2: Pattern consistency: the importorskip line in test_recommender.py byte-for-byte matches the lines used in test_association_mining.py and test_acceptance_weights.py (same reason string).
+- **Completion Evidence**:
+  - TR-5.1 PASS: `cd context-engine ; python -m pytest tests/test_recommender.py -v --no-header` output = `collected 0 items / 1 skipped` + `1 skipped in 0.05s`, exit code 5 (pytest: "no tests collected"). Zero occurrences of "NotImplementedError"; zero "ERROR" lines; zero "FAILED" lines. (The 1 skip is the module-level importorskip preventing collection — identical behaviour to the other two test files.)
+  - TR-5.2 PASS: Byte-for-byte comparison of the guard lines across all three files:
+    - `test_association_mining.py`: `pytest.importorskip("mlxtend", reason="mlxtend optional dependency not installed")`
+    - `test_acceptance_weights.py`: same string
+    - `test_recommender.py` (NEW line 3): same string — `diff`-level identical.
+  - AC-6 PASS: test_recommender.py no longer crashes on collection in environments where the optional mlxtend extra is absent
+
+---
+
+# Rubric AC-7: API Error-Envelope Uniformity
+- **Dimension**: Count of route modules under `app/api/v1/*` that still import or raise raw `HTTPException(status_code=...)` for status codes **that already have a matching ContextIQ domain class** (404=NotFoundError, 403=ForbiddenError, 409=ConflictError, 422=ValidationError, 401=Unauthorized handled centrally). HTTPException for 502 (Bad Gateway, no domain class) or passthrough of `response.status_code` (external service proxy) is excluded from the count.
+- **Scale 0-2**: `0` = 3+ modules still have raw domain-code raises; `1` = exactly 1 targeted module has a residual (incomplete cleanup); `2` = all route modules use domain classes where applicable (analytics.py passthrough 502s are allowed)
+- **Result SCORE: 2/2** (Threshold >= 2 achieved)
+  - Evidence: `grep -n "HTTPException(status_code=" backend/app/api/v1/` returns 4 matches, ALL in `analytics.py`:
+    - analytics.py line 57: `raise HTTPException(status_code=response.status_code, ...)` — 4xx/5xx passthrough from external data-engine service (no domain class applicable)
+    - analytics.py line 60: `raise HTTPException(status_code=502, ...)` — Bad Gateway, no ContextIQ domain class for 502, correct raw usage
+    - analytics.py line 80: same as line 57 (second route)
+    - analytics.py line 83: same as line 60 (second route)
+  - Zero matches in: `predictions.py`, `recommendations.py`, `users.py`, `tasks.py`, `router.py`
+  - `predictions.py`: ValidationError/NotFoundError ✓
+  - `recommendations.py`: NotFoundError ✓
+  - `users.py` (register 404): upgraded from HTTPException(404) → NotFoundError ✓
