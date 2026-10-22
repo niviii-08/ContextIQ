@@ -32,34 +32,30 @@ from typing import Literal
 
 import pandas as pd
 
-mlxtend_installed = True
+_MLXTEND_AVAILABLE: bool = True
+_MLXTEND_INSTALL_MSG: str = (
+    "mlxtend is an optional dependency; install it with `pip install mlxtend` "
+    "to enable association rule mining."
+)
 
 try:
     from mlxtend.frequent_patterns import apriori, fpgrowth, association_rules
     from mlxtend.preprocessing import TransactionEncoder
-except ModuleNotFoundError:
-    mlxtend_installed = False
+except ImportError:
+    _MLXTEND_AVAILABLE = False
 
     def apriori(*args, **kwargs):
-        raise RuntimeError(
-            "mlxtend is not installed. pip install mlxtend to enable association rule mining."
-        )
+        raise NotImplementedError(_MLXTEND_INSTALL_MSG)
 
     def fpgrowth(*args, **kwargs):
-        raise RuntimeError(
-            "mlxtend is not installed. pip install mlxtend to enable association rule mining."
-        )
+        raise NotImplementedError(_MLXTEND_INSTALL_MSG)
 
     def association_rules(*args, **kwargs):
-        raise RuntimeError(
-            "mlxtend is not installed. pip install mlxtend to enable association rule mining."
-        )
+        raise NotImplementedError(_MLXTEND_INSTALL_MSG)
 
     class TransactionEncoder:
         def __init__(self, *args, **kwargs):
-            raise RuntimeError(
-                "mlxtend is not installed. pip install mlxtend to enable association rule mining."
-            )
+            raise NotImplementedError(_MLXTEND_INSTALL_MSG)
 
 from app.schemas.associations import AssociationRule
 

@@ -21,9 +21,9 @@ from app.api.recommendations import router as recommendations_router
 
 
 def _parse_cors_origins() -> List[str]:
-    raw = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+    raw = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3001")
     if not raw:
-        return ["http://localhost:3000"]
+        return ["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3001"]
     try:
         parsed = json.loads(raw)
         if isinstance(parsed, list) and all(isinstance(x, str) for x in parsed):
