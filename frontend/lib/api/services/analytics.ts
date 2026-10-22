@@ -360,12 +360,12 @@ const liveAnalyticsApi: AnalyticsApi = {
   getContextSwitchTimeline: (userId, periodDays = 30) =>
     apiClient.request<TimelineEntry[]>("/analytics/context-switch-timeline", {
       query: { user_id: userId, period_days: periodDays },
-      baseUrl: "core",
+      baseUrl: "analytics",
     }),
   getTaskContextHeatmap: (userId, periodDays = 30, metric) =>
     apiClient.request<HeatmapData>("/analytics/task-context-heatmap", {
       query: { user_id: userId, period_days: periodDays, value_metric: metric },
-      baseUrl: "core",
+      baseUrl: "analytics",
     }),
 };
 
