@@ -1,7 +1,7 @@
 import uuid
 from typing import List
 
-from sqlalchemy import Boolean, String
+from sqlalchemy import Boolean, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -25,6 +25,23 @@ class User(Base, UUIDPKMixin, TimestampMixin):
     hashed_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
     timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="UTC")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    role_persona: Mapped[str] = mapped_column(String(64), nullable=False, default="developer")
+    custom_title: Mapped[str] = mapped_column(String(255), nullable=False, default="Senior Software Engineer")
+    organization: Mapped[str] = mapped_column(String(255), nullable=False, default="Distributed Systems Lab")
+    focus_rhythm: Mapped[str] = mapped_column(String(64), nullable=False, default="morning")
+    daily_goal_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=120)
+    language: Mapped[str] = mapped_column(String(16), nullable=False, default="en")
+    distractions: Mapped[str] = mapped_column(Text, nullable=False, default='["phone", "slack", "tab_overload"]')
+    friction_tolerance: Mapped[str] = mapped_column(String(128), nullable=False, default="Sensitive")
+    reentry_anchor: Mapped[str] = mapped_column(Text, nullable=False, default="Inspect the last modified function signature or uncommitted diff.")
+
+    daily_routine: Mapped[str | None] = mapped_column(Text, nullable=True)
+    daily_chores: Mapped[str | None] = mapped_column(Text, nullable=True)
+    weekend_chores: Mapped[str | None] = mapped_column(Text, nullable=True)
+    frequent_forget_items: Mapped[str | None] = mapped_column(Text, nullable=True)
+    time_delay_triggers: Mapped[str | None] = mapped_column(Text, nullable=True)
+    primary_occupation: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     tasks: Mapped[List["Task"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     locations: Mapped[List["Location"]] = relationship(back_populates="user", cascade="all, delete-orphan")
