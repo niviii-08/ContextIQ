@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 
+@pytest.mark.slow
 def test_end_to_end_training_flow(tmp_path, monkeypatch):
     """Test that the complete training pipeline runs without errors."""
     # Redirect output directories to temp path
@@ -69,6 +70,7 @@ def test_end_to_end_training_flow(tmp_path, monkeypatch):
         assert (artifacts_dir / plot).exists(), f"Missing plot: {plot}"
 
 
+@pytest.mark.slow
 def test_model_bundle_can_be_loaded_and_used(tmp_path, monkeypatch):
     """Test that the model bundle can be loaded and used for inference."""
     import ml.data.generate_dataset as gen_mod
@@ -131,6 +133,7 @@ def test_model_bundle_can_be_loaded_and_used(tmp_path, monkeypatch):
     assert "top_features" in result
 
 
+@pytest.mark.slow
 def test_metrics_json_contains_all_required_fields(tmp_path, monkeypatch):
     """Test that metrics.json contains all required fields."""
     import ml.data.generate_dataset as gen_mod
@@ -185,6 +188,7 @@ def test_metrics_json_contains_all_required_fields(tmp_path, monkeypatch):
             assert field in model_metrics, f"Missing candidate metric {field} for {model_name}"
 
 
+@pytest.mark.slow
 def test_feature_metadata_contains_preprocessing_info(tmp_path, monkeypatch):
     """Test that feature_metadata.json contains preprocessing details."""
     import ml.data.generate_dataset as gen_mod
@@ -230,6 +234,7 @@ def test_feature_metadata_contains_preprocessing_info(tmp_path, monkeypatch):
     assert len(fm["feature_descriptions"]) > 0
 
 
+@pytest.mark.slow
 def test_reproducibility_same_seed_same_output(tmp_path, monkeypatch):
     """Test that using the same seed produces identical results."""
     import ml.data.generate_dataset as gen_mod

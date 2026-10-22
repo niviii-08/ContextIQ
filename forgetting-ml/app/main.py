@@ -19,7 +19,7 @@ from app.api import router
 
 
 def _parse_cors_origins():
-    raw = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+    raw = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3001")
     try:
         parsed = json.loads(raw)
         if isinstance(parsed, list):
