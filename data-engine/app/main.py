@@ -35,7 +35,9 @@ def _parse_cors_origins() -> list[str]:
         return [o.strip() for o in raw.split(",") if o.strip()]
     return [
         "http://localhost:3000",
+        "http://localhost:3001",
         "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
         "http://localhost:8000",
     ]
 
