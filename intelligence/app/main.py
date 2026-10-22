@@ -28,7 +28,7 @@ from app.llm.provider import get_provider
 def _parse_cors_origins() -> list[str]:
     raw = os.getenv("CORS_ORIGINS", "")
     if not raw:
-        return ["http://localhost:3000"]
+        return ["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3001"]
     try:
         parsed = json.loads(raw)
         if isinstance(parsed, list) and all(isinstance(x, str) for x in parsed):
