@@ -1,12 +1,15 @@
 import uuid
+import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user_id, get_db
+from app.core.errors import NotFoundError
+from app.models.location import Location
 from app.models.recommendation import Recommendation, RecommendationStatus, RecommendationType
 from app.models.recommendation_feedback import RecommendationFeedback
 from app.models.enums import RecommendationFeedbackAction, TaskPriority
@@ -17,6 +20,8 @@ from app.schemas.analytics import (
     RecommendationFeedbackCreate,
     RecommendationFeedbackRead,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
@@ -95,10 +100,7 @@ def post_recommendation_feedback(
     )
     recommendation = db.scalar(stmt)
     if recommendation is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Recommendation not found.",
-        )
+        raise NotFoundError("Recommendation not found.")
 
     feedback = RecommendationFeedback(
         user_id=user_id,
@@ -120,13 +122,28 @@ def post_recommendation_feedback(
                 else None
             )
 
+        safe_location_id: Optional[uuid.UUID] = None
+        if body.prefill_location_id is not None:
+            ownership_stmt = select(Location.id).where(
+                Location.id == body.prefill_location_id,
+                Location.user_id == user_id,
+            )
+            if db.scalar(ownership_stmt) is not None:
+                safe_location_id = body.prefill_location_id
+            else:
+                logger.debug(
+                    "prefill_location_id %s does not belong to user %s; dropping",
+                    body.prefill_location_id,
+                    user_id,
+                )
+
         task_create_payload = TaskCreate(
             title=title,
             description=recommendation.message,
             priority=TaskPriority.MEDIUM,
             due_at=datetime.now(timezone.utc) + timedelta(hours=24),
             context_tag=context_tag,
-            context_location_id=body.prefill_location_id,
+            context_location_id=safe_location_id,
         )
         created_task = task_service.create_task(db, user_id, task_create_payload)
         feedback.suggested_task_id = created_task.id
