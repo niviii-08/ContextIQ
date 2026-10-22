@@ -1,5 +1,7 @@
 import pytest
 
+pytest.importorskip("mlxtend", reason="mlxtend optional dependency not installed")
+
 from ml.associations.mining import (
     acceptance_rate_from_feedback,
     mine_association_rules,

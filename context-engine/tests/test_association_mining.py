@@ -1,3 +1,7 @@
+import pytest
+
+pytest.importorskip("mlxtend", reason="mlxtend optional dependency not installed")
+
 from ml.associations.mining import mine_association_rules, mine_frequent_itemsets
 
 

@@ -1,3 +1,7 @@
+import pytest
+
+pytest.importorskip("mlxtend", reason="mlxtend optional dependency not installed")
+
 from app.schemas.associations import AssociationRule
 from ml.associations.recommender import (
     RecommendationQualityConfig,
