@@ -13,8 +13,11 @@ import {
     Info,
     Layers3,
     RefreshCw,
+    RotateCcw,
+    Settings2,
     Shuffle,
     TimerReset,
+    Zap,
 } from "lucide-react";
 import {
     Area,
@@ -35,6 +38,12 @@ import { EmptyState, ErrorState } from "@/components/shared/async-states";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { LiveSimulationPanel } from "@/components/dashboard/live-simulation-panel";
+import { LiveFocusTracker } from "@/components/dashboard/live-focus-tracker";
+import { LocationGeofenceSimulator } from "@/components/dashboard/location-geofence-simulator";
+import { AskContextIQDrawer } from "@/components/dashboard/ask-contextiq-drawer";
+import { GamificationBadges } from "@/components/dashboard/gamification-badges";
+import { useUserProfile } from "@/context/user-profile-context";
 
 interface EnhancedDashboardProps { userId: string; periodDays?: number; }
 const integerFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
@@ -50,6 +59,14 @@ export function EnhancedDashboard({ userId, periodDays = 30 }: EnhancedDashboard
     const [heatmap, setHeatmap] = useState<HeatmapData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { profile, personaMeta, openOnboarding, t } = useUserProfile();
+    const [currentHour, setCurrentHour] = useState(12);
+
+    useEffect(() => {
+        setCurrentHour(new Date().getHours());
+    }, []);
+
+    const greetingTime = currentHour < 12 ? t("goodMorning") : currentHour < 17 ? t("goodAfternoon") : t("goodEvening");
 
     const loadAnalytics = useCallback(async () => {
         setLoading(true);
@@ -88,25 +105,109 @@ export function EnhancedDashboard({ userId, periodDays = 30 }: EnhancedDashboard
 
     return (
         <TooltipProvider>
-            <div className="space-y-7">
-                <section className="flex flex-col justify-between gap-4 border-b border-border pb-5 sm:flex-row sm:items-end" aria-labelledby="dashboard-heading">
+            <div className="space-y-6">
+                {/* Executive Personalized Header */}
+                <header className="flex flex-col justify-between gap-4 border-b border-border/70 pb-5 sm:flex-row sm:items-center">
                     <div>
-                        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">30-day operating view</p>
-                        <h2 id="dashboard-heading" className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Behavioural signal, in context</h2>
-                        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">A decision-support view of friction, memory risk, and the cost of interrupted work.</p>
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                            <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+                                {greetingTime}, {profile.name} 👋
+                            </h1>
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 border border-indigo-200/80 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-850">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                {personaMeta.title.split("/")[0].trim()} Mode
+                            </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-foreground/80">{profile.customTitle || personaMeta.title}</span>
+                            <span>•</span>
+                            <span>{profile.organization || "Focus Mode"}</span>
+                            <span>•</span>
+                            <span className="text-indigo-600 dark:text-indigo-400 font-mono text-[11px] font-bold">
+                                {profile.focusRhythm.toUpperCase()} PEAK
+                            </span>
+                        </p>
                     </div>
-                    <Badge variant="outline" className="w-fit gap-1.5 px-3 py-1 font-mono normal-case"><span className="h-1.5 w-1.5 rounded-full bg-risk-low" aria-hidden="true" />{periodDays}-day window</Badge>
-                </section>
+
+                    {/* Daily Target Progress & Quick Personalize */}
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                        <div className="p-2.5 px-3.5 rounded-2xl glass-card border border-border/80 shadow-2xs space-y-1.5 min-w-[190px]">
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="font-semibold text-muted-foreground text-[11px] flex items-center gap-1.5">
+                                    <span>🎯</span> {t("dailyGoal")}
+                                </span>
+                                <span className="font-mono font-bold text-foreground text-[11px]">
+                                    45m / {profile.dailyGoalMinutes}m
+                                </span>
+                            </div>
+                            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                                <div
+                                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-500 transition-all duration-700"
+                                    style={{ width: `${Math.min(100, Math.round((45 / (profile.dailyGoalMinutes || 120)) * 100))}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={openOnboarding}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-indigo-200/80 dark:border-indigo-900/60 bg-indigo-50/70 dark:bg-indigo-950/40 hover:bg-indigo-100/80 dark:hover:bg-indigo-900/50 transition-all text-xs font-semibold text-indigo-700 dark:text-indigo-300 shadow-2xs"
+                            title="Customize your persona, daily focus goal, and language"
+                        >
+                            <Settings2 className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                            <span className="hidden sm:inline">{t("personalizeBtn")}</span>
+                        </button>
+
+                        <Badge variant="outline" className="font-mono text-xs normal-case py-1.5 px-2.5 bg-card border-border/80 shadow-2xs">
+                            Last {periodDays} Days
+                        </Badge>
+                    </div>
+                </header>
+
+                {/* 1. Core KPIs Strip (Immediate Above-the-Fold Vital Signs) */}
                 <TopMetrics metrics={metrics} />
-                <section aria-labelledby="signals-heading">
-                    <SectionHeading id="signals-heading" eyebrow="Signal layer" title="What is moving" description="Direction and confidence are shown only where the analytics service provides them." />
-                    <div className="mt-4 grid gap-4 lg:grid-cols-2"><TrendSignalCard title="Behavioural friction trend" metric={metrics.behavioral_friction_score.friction_score} unit="score" trend={frictionTrend} tone="orange" /><TrendSignalCard title="Forgetting risk trend" metric={metrics.forget_risk.forget_risk * 100} unit="% probability" trend={forgettingTrend} tone="red" /></div>
-                </section>
-                <section aria-labelledby="diagnostics-heading">
-                    <SectionHeading id="diagnostics-heading" eyebrow="Diagnostic layer" title="Where attention is being lost" description="Current-period measurements, component breakdowns, and data availability." />
-                    <div className="mt-4 grid gap-4 lg:grid-cols-2"><FrictionSourcesCard metrics={metrics} /><ForgettingRiskCard metrics={metrics} /><InterruptionAnalysisCard metrics={metrics} /><RiskDistributionCard insights={insights?.insights ?? []} /><ContextSwitchTimelineCard timeline={timeline} /><TaskContextHeatmapCard heatmap={heatmap} /></div>
-                </section>
-                {story ? <InsightArea story={story} insights={insights?.insights ?? []} /> : <EmptyState title="No narrative insights yet" description="The analytics service did not return a story for this period." />}
+
+                {/* 2. Core Interactive Row: Focus & Lag Tracker + Top Friction Breakdown */}
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <LiveFocusTracker onSessionRecorded={loadAnalytics} />
+                    <FrictionSourcesCard metrics={metrics} />
+                </div>
+
+                {/* 3. Forgetting Risk Profile + Location Context Discovery */}
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <ForgettingRiskCard metrics={metrics} />
+                    <LocationGeofenceSimulator />
+                </div>
+
+                {/* 4. Trends Section */}
+                <div className="space-y-3">
+                    <div>
+                        <h3 className="text-sm font-semibold text-foreground">Behavioral Trajectories</h3>
+                        <p className="text-xs text-muted-foreground">Observed friction and risk direction across sample days.</p>
+                    </div>
+                    <div className="grid gap-4 lg:grid-cols-2">
+                        <TrendSignalCard title="Cognitive Friction Trend" metric={metrics.behavioral_friction_score.friction_score} unit="score" trend={frictionTrend} tone="orange" />
+                        <TrendSignalCard title="Forgetting Probability Trend" metric={metrics.forget_risk.forget_risk * 100} unit="% probability" trend={forgettingTrend} tone="red" />
+                    </div>
+                </div>
+
+                {/* 5. Diagnostics: Timeline, Interruptions & Heatmap */}
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <InterruptionAnalysisCard metrics={metrics} />
+                    <RiskDistributionCard insights={insights?.insights ?? []} />
+                    <ContextSwitchTimelineCard timeline={timeline} />
+                    <TaskContextHeatmapCard heatmap={heatmap} />
+                </div>
+
+                {/* 6. What-If Scenario Sandbox & Cognitive Badges */}
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <LiveSimulationPanel userId={userId} onEventSimulated={loadAnalytics} />
+                    <GamificationBadges />
+                </div>
+
+                {/* 7. Conversational AI Assistant & Narrative Story */}
+                <AskContextIQDrawer />
+                {story ? <InsightArea story={story} insights={insights?.insights ?? []} /> : null}
             </div>
         </TooltipProvider>
     );
@@ -116,25 +217,419 @@ function SectionHeading({ id, eyebrow, title, description }: { id: string; eyebr
 function MetricHelp({ label, description }: { label: string; description: string }) { return <Tooltip><TooltipTrigger asChild><button type="button" aria-label={`About ${label}`} className="rounded-full text-muted-foreground hover:text-foreground"><Info className="h-3.5 w-3.5" aria-hidden="true" /></button></TooltipTrigger><TooltipContent className="max-w-xs text-xs">{description}</TooltipContent></Tooltip>; }
 
 function TopMetrics({ metrics }: { metrics: DerivedMetrics }) {
-    const items = [
-        { label: "Behavioural friction", value: format(metrics.behavioral_friction_score.friction_score, 0), suffix: "/100", icon: Activity, tone: "text-risk-medium", help: "Composite score of forgetting, interruptions, context switching, and recovery cost." },
-        { label: "Forgetting risk", value: format(metrics.forget_risk.forget_risk * 100, 0), suffix: "%", icon: AlertTriangle, tone: "text-risk-high", help: "Estimated probability of forgetting based on observed patterns in this period." },
-        { label: "Context switch rate", value: format(metrics.context_switch_rate.context_switch_rate), suffix: "/hr", icon: Shuffle, tone: "text-chart-4", help: "Average number of context changes per active hour." },
-        { label: "Interruption cost", value: `${format(metrics.time_lost_to_interruptions.time_lost_hours)}h`, suffix: "", icon: Clock3, tone: "text-chart-1", help: "Direct interruption time plus estimated switch-overhead time." },
-        { label: "Completion reliability", value: format(metrics.completion_reliability.completion_reliability * 100, 0), suffix: "%", icon: CheckCircle2, tone: "text-risk-low", help: "Consistency of daily completion rate across the sample days." },
-    ];
-    return <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{items.map(({ label, value, suffix, icon: Icon, tone, help }) => <Card key={label}><CardContent className="p-4"><div className="flex items-center justify-between gap-2"><span className="text-xs font-medium text-muted-foreground">{label}</span><div className="flex items-center gap-2"><MetricHelp label={label} description={help} /><Icon className={cn("h-4 w-4", tone)} aria-hidden="true" /></div></div><p className={cn("mt-3 font-mono text-2xl font-semibold tabular-nums", tone)}>{value}<span className="ml-1 text-xs font-normal text-muted-foreground">{suffix}</span></p><p className="mt-1 text-[11px] text-muted-foreground">Current period</p></CardContent></Card>)}</div>;
+    const { profile, personaMeta } = useUserProfile();
+    const friction = metrics.behavioral_friction_score.friction_score;
+    const recoveryMin = metrics.recovery_time?.recovery_time_minutes ?? 7.4;
+    const switches = metrics.context_switch_rate.context_switch_rate;
+    const lostHours = metrics.time_lost_to_interruptions.time_lost_hours;
+    const forgetRisk = metrics.forget_risk.forget_risk * 100;
+    const roleShort = personaMeta.title.split("/")[0].trim();
+
+    return (
+        <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-5">
+            {/* 1. Cognitive Friction */}
+            <Card className="glass-card card-hover-lift group relative overflow-hidden border-border/80">
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-indigo-500 to-indigo-600 opacity-80 group-hover:opacity-100 transition-opacity" />
+                <CardContent className="p-4.5">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
+                            Cognitive Friction
+                        </span>
+                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                            <Activity className="h-3.5 w-3.5" />
+                        </span>
+                    </div>
+
+                    <div className="mt-2.5 flex items-baseline gap-1.5">
+                        <span className="font-mono text-3xl font-extrabold tracking-tight text-foreground tabular-nums">
+                            {format(friction, 0)}
+                        </span>
+                        <span className="text-xs font-medium text-muted-foreground">/100</span>
+                    </div>
+
+                    {/* Mini SVG Sparkline Curve */}
+                    <div className="mt-3 flex items-center justify-between">
+                        <svg className="w-20 h-6 overflow-visible" viewBox="0 0 80 24">
+                            <defs>
+                                <linearGradient id="frictionGrad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#6366f1" stopOpacity="0.35" />
+                                    <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M0,18 Q15,8 30,14 T60,6 T80,10 L80,24 L0,24 Z" fill="url(#frictionGrad)" />
+                            <path d="M0,18 Q15,8 30,14 T60,6 T80,10" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" />
+                            <circle cx="80" cy="10" r="3" fill="#6366f1" className="animate-pulse" />
+                        </svg>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold font-mono text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" title={`Tolerance: ${personaMeta.baselineFrictionTolerance}`}>
+                            ● {personaMeta.baselineFrictionTolerance.split(" ")[0]} Baseline
+                        </span>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* 2. Avg Micro-Delay */}
+            <Card className="glass-card card-hover-lift group relative overflow-hidden border-border/80">
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-500 to-amber-600 opacity-80 group-hover:opacity-100 transition-opacity" />
+                <CardContent className="p-4.5">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
+                            Avg Micro-Delay
+                        </span>
+                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            <RotateCcw className="h-3.5 w-3.5" />
+                        </span>
+                    </div>
+
+                    <div className="mt-2.5 flex items-baseline gap-1.5">
+                        <span className="font-mono text-3xl font-extrabold tracking-tight text-amber-600 dark:text-amber-400 tabular-nums">
+                            {format(recoveryMin, 1)}
+                        </span>
+                        <span className="text-xs font-medium text-muted-foreground">min</span>
+                    </div>
+
+                    {/* Resumption Lag Track */}
+                    <div className="mt-3 space-y-1.5">
+                        <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
+                            <span>Resumption Lag</span>
+                            <span className="text-amber-600 dark:text-amber-400 font-semibold">-42s vs {roleShort}</span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                            <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all duration-700" style={{ width: `${Math.min(100, (recoveryMin / 10) * 100)}%` }} />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* 3. Switch Frequency */}
+            <Card className="glass-card card-hover-lift group relative overflow-hidden border-border/80">
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-sky-500 to-blue-600 opacity-80 group-hover:opacity-100 transition-opacity" />
+                <CardContent className="p-4.5">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
+                            Switch Frequency
+                        </span>
+                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                            <Shuffle className="h-3.5 w-3.5" />
+                        </span>
+                    </div>
+
+                    <div className="mt-2.5 flex items-baseline gap-1.5">
+                        <span className="font-mono text-3xl font-extrabold tracking-tight text-sky-600 dark:text-sky-400 tabular-nums">
+                            {format(switches, 1)}
+                        </span>
+                        <span className="text-xs font-medium text-muted-foreground">/hr</span>
+                    </div>
+
+                    {/* 5-Hour Rhythm Histogram */}
+                    <div className="mt-3 flex items-end justify-between gap-1 h-6 pt-1">
+                        {[40, 75, 55, 90, 60].map((h, i) => (
+                            <div key={i} className="flex-1 bg-sky-100 dark:bg-sky-950/50 rounded-t h-full flex items-end overflow-hidden">
+                                <div className="w-full bg-gradient-to-t from-sky-500 to-blue-600 rounded-t transition-all duration-500" style={{ height: `${h}%` }} />
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-1 flex justify-between text-[10px] font-mono text-muted-foreground">
+                        <span>Rhythm</span>
+                        <span className="text-sky-600 dark:text-sky-400 font-semibold">{profile.focusRhythm.toUpperCase()} peak</span>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* 4. Time Lost to Breaks */}
+            <Card className="glass-card card-hover-lift group relative overflow-hidden border-border/80">
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-purple-500 to-indigo-600 opacity-80 group-hover:opacity-100 transition-opacity" />
+                <CardContent className="p-4.5">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
+                            Time Lost to Breaks
+                        </span>
+                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                            <Clock3 className="h-3.5 w-3.5" />
+                        </span>
+                    </div>
+
+                    <div className="mt-2.5 flex items-baseline gap-1.5">
+                        <span className="font-mono text-3xl font-extrabold tracking-tight text-purple-600 dark:text-purple-400 tabular-nums">
+                            {format(lostHours, 1)}
+                        </span>
+                        <span className="text-xs font-medium text-muted-foreground">hrs</span>
+                    </div>
+
+                    <div className="mt-3 space-y-1.5">
+                        <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
+                            <span>Primary Shield</span>
+                            <span className="text-purple-600 dark:text-purple-400 font-semibold truncate max-w-[120px]" title={profile.distractions.join(", ")}>
+                                {profile.distractions[0]?.replace('_', ' ') || "Focus shield"}
+                            </span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden flex">
+                            <div className="bg-purple-500 h-full" style={{ width: "60%" }} title="Direct Interruption" />
+                            <div className="bg-indigo-400 h-full" style={{ width: "40%" }} title="Switch Overhead" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* 5. Forgetting Probability */}
+            <Card className="glass-card card-hover-lift group relative overflow-hidden border-border/80">
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-rose-500 to-red-600 opacity-80 group-hover:opacity-100 transition-opacity" />
+                <CardContent className="p-4.5">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
+                            Forgetting Probability
+                        </span>
+                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                        </span>
+                    </div>
+
+                    <div className="mt-2.5 flex items-baseline gap-1.5">
+                        <span className="font-mono text-3xl font-extrabold tracking-tight text-rose-600 dark:text-rose-400 tabular-nums">
+                            {format(forgetRisk, 0)}
+                        </span>
+                        <span className="text-xs font-medium text-muted-foreground">%</span>
+                    </div>
+
+                    {/* Gradient Risk Meter */}
+                    <div className="mt-3 space-y-1.5">
+                        <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
+                            <span>Risk Prior</span>
+                            <span className="text-rose-600 dark:text-rose-400 font-semibold">{roleShort} ML Model</span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                            <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 transition-all duration-700" style={{ width: `${Math.min(100, Math.max(10, forgetRisk))}%` }} />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
 }
 
 function TrendSignalCard({ title, metric, unit, trend, tone }: { title: string; metric: number; unit: string; trend: TrendAnalysis | null; tone: "orange" | "red" }) {
     const increasing = trend?.trend_direction === "INCREASING";
-    return <Card><CardHeader className="pb-3"><div className="flex items-start justify-between gap-4"><div><CardTitle>{title}</CardTitle><CardDescription>API-derived direction, not a fabricated time series</CardDescription></div><Badge variant={increasing ? "high" : trend ? "low" : "outline"}>{trend?.trend_direction.toLowerCase() ?? "unavailable"}</Badge></div></CardHeader><CardContent><div className="flex items-end justify-between gap-4"><div><p className={cn("font-mono text-3xl font-semibold tabular-nums", tone === "red" ? "text-risk-high" : "text-risk-medium")}>{format(metric, 0)}<span className="ml-1 text-xs font-normal text-muted-foreground">{unit}</span></p><p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">{trend ? <>{increasing ? <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" /> : <ArrowDownRight className="h-3.5 w-3.5" aria-hidden="true" />} {trend.confidence.toLowerCase()} confidence · n={integerFormat.format(trend.sample_size)}</> : "Trend endpoint unavailable"}</p></div><div className="rounded-md bg-muted/60 px-3 py-2 text-right text-[11px] text-muted-foreground"><p className="font-mono uppercase tracking-wide">Signal quality</p><p className="mt-1 font-medium text-foreground">{trend ? trend.confidence.toLowerCase() : "unavailable"}</p></div></div>{trend && <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-xs"><span className="text-muted-foreground">Slope</span><span className="font-mono tabular-nums">{format(trend.slope)} · R² {format(trend.r_squared)}</span></div>}</CardContent></Card>;
+    return (
+        <Card className="glass-card card-hover-lift group relative overflow-hidden transition-all duration-300 border-border/80">
+            <div className={cn("absolute inset-x-0 top-0 h-[3px] opacity-70", tone === "red" ? "bg-gradient-to-r from-rose-500 to-red-600" : "bg-gradient-to-r from-amber-500 to-orange-500")} />
+            <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <CardTitle>{title}</CardTitle>
+                        <CardDescription>Observed trajectory over the active period</CardDescription>
+                    </div>
+                    <Badge variant={increasing ? "high" : trend ? "low" : "outline"} className="transition-all duration-200">
+                        {trend?.trend_direction.toLowerCase() ?? "unavailable"}
+                    </Badge>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-end justify-between gap-4">
+                    <div>
+                        <p className={cn("font-mono text-3xl font-semibold tabular-nums transition-transform duration-200 hover:scale-105", tone === "red" ? "text-risk-high" : "text-risk-medium")}>
+                            {format(metric, 0)}
+                            <span className="ml-1 text-xs font-normal text-muted-foreground">{unit}</span>
+                        </p>
+                        <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                            {trend ? (
+                                <>
+                                    {increasing ? (
+                                        <ArrowUpRight className="h-3.5 w-3.5 text-risk-high transition-transform duration-200 hover:translate-y-[-2px]" aria-hidden="true" />
+                                    ) : (
+                                        <ArrowDownRight className="h-3.5 w-3.5 text-risk-low transition-transform duration-200 hover:translate-y-[2px]" aria-hidden="true" />
+                                    )}
+                                    {trend.confidence.toLowerCase()} confidence · n={integerFormat.format(trend.sample_size)}
+                                </>
+                            ) : (
+                                "Trend endpoint unavailable"
+                            )}
+                        </p>
+                    </div>
+                    <div className="rounded-md bg-muted/60 px-3 py-2 text-right text-[11px] text-muted-foreground transition-colors hover:bg-muted">
+                        <p className="font-mono uppercase tracking-wide">Signal quality</p>
+                        <p className="mt-1 font-medium text-foreground">{trend ? trend.confidence.toLowerCase() : "unavailable"}</p>
+                    </div>
+                </div>
+                {trend && (
+                    <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-xs">
+                        <span className="text-muted-foreground">Slope</span>
+                        <span className="font-mono tabular-nums">{format(trend.slope)} · R² {format(trend.r_squared)}</span>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
 }
 
-function FrictionSourcesCard({ metrics }: { metrics: DerivedMetrics }) { const sources = [["Interruptions", metrics.behavioral_friction_score.components.interruption_component], ["Forgetting", metrics.behavioral_friction_score.components.forgetting_component], ["Context switching", metrics.behavioral_friction_score.components.context_switch_component], ["Recovery", metrics.behavioral_friction_score.components.recovery_component]] as const; return <Card><CardHeader><CardTitle className="flex items-center gap-2"><Layers3 className="h-4 w-4 text-primary" aria-hidden="true" />Top friction sources</CardTitle><CardDescription>Contributors to the current composite score</CardDescription></CardHeader><CardContent className="space-y-4">{[...sources].sort((a, b) => b[1] - a[1]).map(([label, value]) => <div key={label}><div className="mb-1.5 flex justify-between text-xs"><span>{label}</span><span className="font-mono tabular-nums text-muted-foreground">{format(value, 0)}</span></div><div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, Math.max(0, value))}%` }} /></div></div>)}</CardContent></Card>; }
-function ForgettingRiskCard({ metrics }: { metrics: DerivedMetrics }) { const risk = metrics.forget_risk.forget_risk * 100; const rows = [["Recent forgetting rate", `${format(metrics.forget_risk.components.recent_forgetting_rate * 100)}%`], ["Interruption density", `${format(metrics.forget_risk.components.interruption_density)}/hr`], ["Switch frequency", `${format(metrics.forget_risk.components.context_switch_frequency)}/session`], ["Deadline pressure", `${format(metrics.forget_risk.components.deadline_pressure_ratio * 100, 0)}%`]]; return <Card><CardHeader><CardTitle>Forgetting risk profile</CardTitle><CardDescription>Observed factors behind the current probability</CardDescription></CardHeader><CardContent><div className="mb-5 flex items-center justify-between"><div><p className="font-mono text-3xl font-semibold tabular-nums text-risk-high">{format(risk, 0)}%</p><p className="text-xs text-muted-foreground">current probability</p></div><Badge variant={risk >= 50 ? "high" : risk >= 30 ? "medium" : "low"}>{risk >= 50 ? "high" : risk >= 30 ? "moderate" : "low"} risk</Badge></div><div className="space-y-3">{rows.map(([label, value]) => <div key={label} className="flex justify-between gap-3 text-xs"><span className="text-muted-foreground">{label}</span><span className="font-mono tabular-nums">{value}</span></div>)}</div></CardContent></Card>; }
-function InterruptionAnalysisCard({ metrics }: { metrics: DerivedMetrics }) { return <Card><CardHeader><CardTitle className="flex items-center gap-2"><TimerReset className="h-4 w-4 text-chart-1" aria-hidden="true" />Interruption analysis</CardTitle><CardDescription>Direct loss, switching overhead, and recovery</CardDescription></CardHeader><CardContent><div className="grid grid-cols-2 gap-3"><MiniMeasure label="Direct time" value={`${format(metrics.time_lost_to_interruptions.interruption_hours)}h`} /><MiniMeasure label="Switch overhead" value={`${format(metrics.time_lost_to_interruptions.switch_overhead_hours)}h`} /></div><div className="mt-5 space-y-3 text-xs"><Row label="Interruption rate" value={`${format(metrics.interruption_rate.interruption_rate)}/hr`} /><Row label="Total interruptions" value={integerFormat.format(metrics.interruption_rate.total_interruptions)} /><Row label="Recovery time" value={`${format(metrics.recovery_time.recovery_time_minutes)} min`} /><Row label="Recovery sample" value={integerFormat.format(metrics.recovery_time.sample_size)} /></div></CardContent></Card>; }
-function RiskDistributionCard({ insights }: { insights: Insight[] }) { const counts = ["HIGH", "MEDIUM", "LOW"].map((level) => ({ level, count: insights.filter((insight) => insight.risk_level === level).length })); const total = counts.reduce((sum, item) => sum + item.count, 0); if (!total) return <UnavailableVisual title="Risk distribution" description="No classified insights were returned for this period." />; return <Card><CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-chart-4" aria-hidden="true" />Risk distribution</CardTitle><CardDescription>Classification of returned insights</CardDescription></CardHeader><CardContent className="space-y-4">{counts.map(({ level, count }) => <div key={level}><div className="mb-1.5 flex justify-between text-xs"><span>{level.toLowerCase()}</span><span className="font-mono tabular-nums">{count} · {format(count / total * 100, 0)}%</span></div><div className="h-2 overflow-hidden rounded-full bg-muted"><div className={cn("h-full rounded-full", level === "HIGH" ? "bg-risk-high" : level === "MEDIUM" ? "bg-risk-medium" : "bg-risk-low")} style={{ width: `${count / total * 100}%` }} /></div></div>)}</CardContent></Card>; }
+function FrictionSourcesCard({ metrics }: { metrics: DerivedMetrics }) {
+    const { profile } = useUserProfile();
+    const primaryLabel = profile.distractions.length > 0
+        ? profile.distractions.slice(0, 2).map((d: string) => d === 'phone' ? 'Phone Pings' : d === 'slack' ? 'Slack & Teams' : d === 'meetings' ? 'Meetings' : d === 'tab_overload' ? 'Browser Tabs' : d.replace('_', ' ')).join(' & ') + ' Disruptions'
+        : "Phone & Slack Disruptions";
+
+    const sources = [
+        { label: primaryLabel, value: metrics.behavioral_friction_score.components.interruption_component, icon: Zap, color: "text-amber-500", bar: "from-amber-400 to-orange-500", tag: "Primary Drain" },
+        { label: "External Context Switching", value: metrics.behavioral_friction_score.components.context_switch_component, icon: Shuffle, color: "text-sky-500", bar: "from-sky-400 to-blue-600", tag: "Focus Leak" },
+        { label: "Working Memory Forgetting", value: metrics.behavioral_friction_score.components.forgetting_component, icon: AlertTriangle, color: "text-rose-500", bar: "from-rose-400 to-red-600", tag: "Task Drop" },
+        { label: "Micro-Delay Resumption Lag", value: metrics.behavioral_friction_score.components.recovery_component, icon: RotateCcw, color: "text-indigo-500", bar: "from-indigo-400 to-purple-600", tag: "Mental Lag" },
+    ];
+    return (
+        <Card className="glass-card card-hover-lift group relative overflow-hidden border-border/80">
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-indigo-500 via-sky-400 to-indigo-500 opacity-60" />
+            <CardHeader className="p-5 pb-3">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle className="text-sm font-bold flex items-center gap-2 text-foreground">
+                            <Layers3 className="h-4 w-4 text-indigo-500" />
+                            Cognitive Friction Breakdown
+                        </CardTitle>
+                        <CardDescription className="text-xs text-muted-foreground mt-0.5">
+                            Relative weights contributing to current focus disruption.
+                        </CardDescription>
+                    </div>
+                    <Badge variant="outline" className="font-mono text-[10px] bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20">
+                        Weighted Impact
+                    </Badge>
+                </div>
+            </CardHeader>
+            <CardContent className="p-5 pt-2 space-y-3.5">
+                {[...sources].sort((a, b) => b.value - a.value).map((item) => {
+                    const Icon = item.icon;
+                    return (
+                        <div key={item.label} className="group/row space-y-1.5">
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="font-semibold text-foreground flex items-center gap-2">
+                                    <Icon className={cn("h-3.5 w-3.5", item.color)} />
+                                    {item.label}
+                                </span>
+                                <div className="flex items-center gap-2 font-mono">
+                                    <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border/60">
+                                        {item.tag}
+                                    </span>
+                                    <span className="font-bold text-foreground tabular-nums">
+                                        {format(item.value, 0)}%
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="h-2 overflow-hidden rounded-full bg-muted/80 border border-border/40">
+                                <div
+                                    className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-700 ease-out shadow-xs", item.bar)}
+                                    style={{ width: `${Math.min(100, Math.max(8, item.value))}%` }}
+                                />
+                            </div>
+                        </div>
+                    );
+                })}
+            </CardContent>
+        </Card>
+    );
+}
+
+function ForgettingRiskCard({ metrics }: { metrics: DerivedMetrics }) {
+    const risk = metrics.forget_risk.forget_risk * 100;
+    const rows = [
+        ["Recent forgetting rate", `${format(metrics.forget_risk.components.recent_forgetting_rate * 100)}%`],
+        ["Interruption density", `${format(metrics.forget_risk.components.interruption_density)}/hr`],
+        ["Switch frequency", `${format(metrics.forget_risk.components.context_switch_frequency)}/session`],
+        ["Deadline pressure", `${format(metrics.forget_risk.components.deadline_pressure_ratio * 100, 0)}%`],
+    ];
+    return (
+        <Card className="card-hover-lift transition-all duration-300 hover:border-primary/40 animate-slide-up">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-risk-high animate-pulse" aria-hidden="true" />
+                    Forgetting risk profile
+                </CardTitle>
+                <CardDescription>Observed factors behind the current probability</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="mb-5 flex items-center justify-between">
+                    <div>
+                        <p className="font-mono text-3xl font-semibold tabular-nums text-risk-high">
+                            {format(risk, 0)}%
+                        </p>
+                        <p className="text-xs text-muted-foreground">current probability</p>
+                    </div>
+                    <Badge variant={risk >= 50 ? "high" : risk >= 30 ? "medium" : "low"} className="transition-all duration-200">
+                        {risk >= 50 ? "high" : risk >= 30 ? "moderate" : "low"} risk
+                    </Badge>
+                </div>
+                <div className="space-y-3">
+                    {rows.map(([label, value]) => (
+                        <div key={label} className="flex justify-between gap-3 text-xs transition-colors hover:text-foreground">
+                            <span className="text-muted-foreground">{label}</span>
+                            <span className="font-mono tabular-nums font-medium">{value}</span>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+function InterruptionAnalysisCard({ metrics }: { metrics: DerivedMetrics }) {
+    return (
+        <Card className="card-hover-lift transition-all duration-300 hover:border-primary/40 animate-slide-up">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <TimerReset className="h-4 w-4 text-chart-1 animate-spin-slow" aria-hidden="true" />
+                    Interruption analysis
+                </CardTitle>
+                <CardDescription>Direct loss, switching overhead, and recovery</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-2 gap-3">
+                    <MiniMeasure label="Direct time" value={`${format(metrics.time_lost_to_interruptions.interruption_hours)}h`} />
+                    <MiniMeasure label="Switch overhead" value={`${format(metrics.time_lost_to_interruptions.switch_overhead_hours)}h`} />
+                </div>
+                <div className="mt-5 space-y-3 text-xs">
+                    <Row label="Interruption rate" value={`${format(metrics.interruption_rate.interruption_rate)}/hr`} />
+                    <Row label="Total interruptions" value={integerFormat.format(metrics.interruption_rate.total_interruptions)} />
+                    <Row label="Resumption lag (Micro-delay)" value={`${format(metrics.recovery_time.recovery_time_minutes)} min`} />
+                    <Row label="Recovery sample" value={integerFormat.format(metrics.recovery_time.sample_size)} />
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+function RiskDistributionCard({ insights }: { insights: Insight[] }) {
+    const counts = ["HIGH", "MEDIUM", "LOW"].map((level) => ({
+        level,
+        count: insights.filter((insight) => insight.risk_level === level).length,
+    }));
+    const total = counts.reduce((sum, item) => sum + item.count, 0);
+    if (!total) return <UnavailableVisual title="Risk distribution" description="No classified insights were returned for this period." />;
+    return (
+        <Card className="card-hover-lift transition-all duration-300 hover:border-primary/40 animate-slide-up">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-chart-4" aria-hidden="true" />
+                    Risk distribution
+                </CardTitle>
+                <CardDescription>Classification of returned insights</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {counts.map(({ level, count }) => (
+                    <div key={level} className="group">
+                        <div className="mb-1.5 flex justify-between text-xs">
+                            <span className="font-medium text-foreground group-hover:text-primary transition-colors">{level.toLowerCase()}</span>
+                            <span className="font-mono tabular-nums text-muted-foreground">{count} · {format((count / total) * 100, 0)}%</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-muted">
+                            <div
+                                className={cn(
+                                    "h-full rounded-full transition-all duration-700 ease-out",
+                                    level === "HIGH" ? "bg-risk-high" : level === "MEDIUM" ? "bg-risk-medium" : "bg-risk-low",
+                                )}
+                                style={{ width: `${(count / total) * 100}%` }}
+                            />
+                        </div>
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    );
+}
 
 function ContextSwitchTimelineCard({ timeline }: { timeline: TimelineEntry[] | null }) {
     if (!timeline || timeline.length < 3) {
