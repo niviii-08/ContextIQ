@@ -74,8 +74,8 @@ export function EnhancedContextIntelligence({ userId, periodDays = 30 }: Enhance
       <header className="flex flex-col justify-between gap-4 border-b border-border pb-5 sm:flex-row sm:items-end">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">Context layer</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Context intelligence</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Understand the environments, repetitions, and recovery costs shaping task performance.</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Context & Micro-Delay Intelligence</h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Quantifying micro-delays, resumption latency, environments, and recovery costs shaping task performance.</p>
         </div>
         <Badge variant="outline" className="w-fit font-mono normal-case">{periodDays}-day window</Badge>
       </header>
@@ -83,10 +83,10 @@ export function EnhancedContextIntelligence({ userId, periodDays = 30 }: Enhance
       {/* Context Metrics */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <ContextMetricCard
-          label="Recovery Time"
+          label="Micro-Delay (Resumption Lag)"
           value={`${metrics.recovery_time.recovery_time_minutes.toFixed(1)}min`}
           icon={RotateCcw}
-          description="Average time to return to paused tasks"
+          description="Average latency to resume focus after interruptions"
           color="purple"
         />
         <ContextMetricCard
@@ -179,17 +179,17 @@ export function EnhancedContextIntelligence({ userId, periodDays = 30 }: Enhance
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <RotateCcw className="h-5 w-5 text-purple-500" />
-            Recovery Time Analysis
+            Micro-Delay & Resumption Lag Analysis
           </CardTitle>
           <CardDescription>
-            Time to regain focus after interruptions
+            Quantifying cognitive latency and time lost to regain focus after interruptions
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 p-4">
               <div>
-                <div className="text-sm text-muted-foreground">Average Recovery Time</div>
+                <div className="text-sm text-muted-foreground">Average Micro-Delay</div>
                 <div className="font-mono text-3xl font-semibold tabular-nums text-chart-4">
                   {metrics.recovery_time.recovery_time_minutes.toFixed(1)} min
                 </div>
@@ -203,8 +203,8 @@ export function EnhancedContextIntelligence({ userId, periodDays = 30 }: Enhance
             </div>
 
             <div className="text-sm leading-6 text-muted-foreground">
-              Recovery time measures how long it takes to return to a paused task after an interruption.
-              Lower values indicate better focus recovery and less cognitive switching cost.
+              Micro-delay (resumption lag) measures the cognitive friction and latency before returning to a paused task after an interruption.
+              Lower values indicate better flow state retention and minimal context-switching tax.
             </div>
           </div>
         </CardContent>
