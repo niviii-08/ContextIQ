@@ -121,8 +121,12 @@ export function EnhancedDashboard({ userId, periodDays = 30 }: EnhancedDashboard
                         </div>
                         <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
                             <span className="font-semibold text-foreground/80">{profile.customTitle || personaMeta.title}</span>
-                            <span>•</span>
-                            <span>{profile.organization || "Focus Mode"}</span>
+                            {profile.organization ? (
+                                <>
+                                    <span>•</span>
+                                    <span>{profile.organization}</span>
+                                </>
+                            ) : null}
                             <span>•</span>
                             <span className="text-indigo-600 dark:text-indigo-400 font-mono text-[11px] font-bold">
                                 {profile.focusRhythm.toUpperCase()} PEAK

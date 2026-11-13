@@ -16,7 +16,6 @@ import {
   Clock,
   X,
   User,
-  Building,
   Target,
   Utensils,
   Shirt,
@@ -108,7 +107,6 @@ export function CognitiveOnboardingDialog() {
   // Step 1: Identity & Occupation
   const [name, setName] = useState<string>(profile.name || "");
   const [customTitle, setCustomTitle] = useState<string>(profile.customTitle || "");
-  const [organization, setOrganization] = useState<string>(profile.organization || "");
   const [selectedRole, setSelectedRole] = useState<RolePersona>(profile.role || "developer");
 
   // Step 2: Routine & Chores
@@ -144,7 +142,6 @@ export function CognitiveOnboardingDialog() {
     if (isOnboardingOpen) {
       setName(profile.name || "");
       setCustomTitle(profile.customTitle || "");
-      setOrganization(profile.organization || "");
       setSelectedRole(profile.role || "developer");
       setDailyRoutine(profile.dailyRoutine || "");
       setDailyChores(profile.dailyChores || []);
@@ -194,7 +191,6 @@ export function CognitiveOnboardingDialog() {
     const updated = {
       name: name.trim() || profile.name || "User",
       customTitle: customTitle.trim() || PERSONA_DEFINITIONS[selectedRole]?.title.split("/")[0].trim(),
-      organization: organization.trim() || "Focus Mode",
       role: selectedRole,
       language: selectedLanguage,
       distractions: selectedDistractions,
@@ -341,7 +337,7 @@ export function CognitiveOnboardingDialog() {
               </div>
 
               {/* Name & Title Inputs */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl bg-muted/40 border border-border/70">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-muted/40 border border-border/70">
                 <div>
                   <label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1 mb-1">
                     <User className="h-3 w-3 text-indigo-500" />
@@ -365,19 +361,6 @@ export function CognitiveOnboardingDialog() {
                     value={customTitle}
                     onChange={(e) => setCustomTitle(e.target.value)}
                     placeholder="e.g. Senior Software Engineer"
-                    className="w-full px-3 py-1.5 rounded-xl border border-border/80 bg-background text-xs font-semibold text-foreground focus:outline-hidden focus:ring-2 focus:ring-indigo-500/40"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1 mb-1">
-                    <Building className="h-3 w-3 text-indigo-500" />
-                    Company / Lab / School
-                  </label>
-                  <input
-                    type="text"
-                    value={organization}
-                    onChange={(e) => setOrganization(e.target.value)}
-                    placeholder="e.g. Distributed Systems Lab"
                     className="w-full px-3 py-1.5 rounded-xl border border-border/80 bg-background text-xs font-semibold text-foreground focus:outline-hidden focus:ring-2 focus:ring-indigo-500/40"
                   />
                 </div>

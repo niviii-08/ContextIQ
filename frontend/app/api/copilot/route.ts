@@ -21,13 +21,13 @@ export async function POST(req: Request) {
 
   const userName = profile?.name || "Neevetha";
   const userRole = profile?.customTitle || personaTitle || "Software Engineer";
-  const userOrg = profile?.organization || "Engineering";
+  const orgSuffix = profile?.organization ? ` at ${profile.organization}` : "";
   const focusRhythm = profile?.focusRhythm || "morning";
   const dailyGoal = profile?.dailyGoalMinutes || 120;
   const distractions = (profile?.distractions || []).join(", ");
 
   const systemPrompt = `You are ContextIQ Behavioral & Cognitive AI Co-Pilot.
-You are assisting ${userName}, who is a ${userRole} at ${userOrg}.
+You are assisting ${userName}, who is a ${userRole}${orgSuffix}.
 Personal Profile Context:
 - Peak Focus Rhythm: ${focusRhythm}
 - Daily Deep Work Target: ${dailyGoal} minutes

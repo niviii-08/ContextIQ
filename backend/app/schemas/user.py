@@ -17,7 +17,7 @@ class UserCreate(UserBase):
     password: Optional[str] = Field(default=None, min_length=4)
     role_persona: Optional[str] = "developer"
     custom_title: Optional[str] = "Senior Software Engineer"
-    organization: Optional[str] = "Distributed Systems Lab"
+    organization: Optional[str] = None
     focus_rhythm: Optional[str] = "morning"
     daily_goal_minutes: Optional[int] = 120
     language: Optional[str] = "en"
@@ -38,7 +38,7 @@ class UserSignupWithTasks(BaseModel):
     display_name: str = Field(..., min_length=1, max_length=120)
     role_persona: Optional[str] = "developer"
     custom_title: Optional[str] = "Senior Software Engineer"
-    organization: Optional[str] = "Distributed Systems Lab"
+    organization: Optional[str] = None
     focus_rhythm: Optional[str] = "morning"
     daily_goal_minutes: Optional[int] = 120
     language: Optional[str] = "en"
@@ -74,7 +74,7 @@ class UserRead(ORMBase, UserBase):
     is_active: bool
     role_persona: Optional[str] = "developer"
     custom_title: Optional[str] = "Senior Software Engineer"
-    organization: Optional[str] = "Distributed Systems Lab"
+    organization: Optional[str] = None
     focus_rhythm: Optional[str] = "morning"
     daily_goal_minutes: Optional[int] = 120
     language: Optional[str] = "en"

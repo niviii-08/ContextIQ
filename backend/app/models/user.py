@@ -28,7 +28,7 @@ class User(Base, UUIDPKMixin, TimestampMixin):
 
     role_persona: Mapped[str] = mapped_column(String(64), nullable=False, default="developer")
     custom_title: Mapped[str] = mapped_column(String(255), nullable=False, default="Senior Software Engineer")
-    organization: Mapped[str] = mapped_column(String(255), nullable=False, default="Distributed Systems Lab")
+    organization: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
     focus_rhythm: Mapped[str] = mapped_column(String(64), nullable=False, default="morning")
     daily_goal_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=120)
     language: Mapped[str] = mapped_column(String(16), nullable=False, default="en")
