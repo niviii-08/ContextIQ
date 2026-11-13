@@ -357,16 +357,53 @@ const liveAnalyticsApi: AnalyticsApi = {
       query: { user_id: userId, period_days: periodDays },
       baseUrl: "analytics",
     }),
-  getContextSwitchTimeline: (userId, periodDays = 30) =>
-    apiClient.request<TimelineEntry[]>("/analytics/context-switch-timeline", {
+  getContextSwitchTimeline: async (userId, periodDays = 30) => {
+    const res = await apiClient.request<any>("/analytics/context-switch-timeline", {
       query: { user_id: userId, period_days: periodDays },
       baseUrl: "analytics",
-    }),
-  getTaskContextHeatmap: (userId, periodDays = 30, metric) =>
-    apiClient.request<HeatmapData>("/analytics/task-context-heatmap", {
+    });
+    if (res.data) {
+      const raw = res.data;
+      const rawList = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.timeline)
+          ? raw.timeline
+          : [];
+      const mapped: TimelineEntry[] = rawList.map((entry: any) => ({
+        timestamp: entry.timestamp,
+        taskId: entry.taskId ?? entry.task_id ?? "",
+        taskTitle: entry.taskTitle ?? entry.task_title ?? "Task",
+        locationId: entry.locationId ?? entry.location_id ?? null,
+        locationLabel: entry.locationLabel ?? entry.location_label ?? null,
+        contextTag: entry.contextTag ?? entry.context_tag ?? null,
+        eventType: entry.eventType ?? entry.event_type ?? "event",
+        isInterruption: Boolean(entry.isInterruption ?? entry.is_interruption),
+      }));
+      return { data: mapped, error: null };
+    }
+    return res as any;
+  },
+  getTaskContextHeatmap: async (userId, periodDays = 30, metric) => {
+    const res = await apiClient.request<any>("/analytics/task-context-heatmap", {
       query: { user_id: userId, period_days: periodDays, value_metric: metric },
       baseUrl: "analytics",
-    }),
+    });
+    if (res.data) {
+      const raw = res.data;
+      const data: HeatmapData = {
+        rows: Array.isArray(raw.rows) ? raw.rows : [],
+        columns: Array.isArray(raw.columns) ? raw.columns : [],
+        cells: Array.isArray(raw.cells) ? raw.cells : [],
+        sampleSizes: Array.isArray(raw.sampleSizes)
+          ? raw.sampleSizes
+          : Array.isArray(raw.sample_sizes)
+            ? raw.sample_sizes
+            : [],
+      };
+      return { data, error: null };
+    }
+    return res as any;
+  },
 };
 
 export const analyticsApi: AnalyticsApi = apiClient.USE_MOCK

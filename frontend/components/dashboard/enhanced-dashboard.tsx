@@ -635,8 +635,14 @@ function RiskDistributionCard({ insights }: { insights: Insight[] }) {
     );
 }
 
-function ContextSwitchTimelineCard({ timeline }: { timeline: TimelineEntry[] | null }) {
-    if (!timeline || timeline.length < 3) {
+function ContextSwitchTimelineCard({ timeline }: { timeline: TimelineEntry[] | null | any }) {
+    const list: TimelineEntry[] = Array.isArray(timeline)
+        ? timeline
+        : Array.isArray(timeline?.timeline)
+          ? timeline.timeline
+          : [];
+
+    if (!Array.isArray(list) || list.length < 3) {
         return (
             <Card>
                 <CardHeader>
@@ -655,16 +661,19 @@ function ContextSwitchTimelineCard({ timeline }: { timeline: TimelineEntry[] | n
             </Card>
         );
     }
-    const chartData = timeline.map((entry, index) => {
+    const chartData = list.map((entry: any, index: number) => {
+        const entryTaskTitle = entry.taskTitle ?? entry.task_title ?? "Task";
+        const entryLocation = entry.locationLabel ?? entry.location_label ?? "—";
+        const entryInterruption = Boolean(entry.isInterruption ?? entry.is_interruption);
         const d = new Date(entry.timestamp);
         const hh = d.getHours().toString().padStart(2, "0");
         const mm = d.getMinutes().toString().padStart(2, "0");
         return {
             time: `${hh}:${mm}`,
             value: index,
-            locationLabel: entry.locationLabel ?? "—",
-            taskTitle: entry.taskTitle,
-            isInterruption: entry.isInterruption,
+            locationLabel: entryLocation,
+            taskTitle: entryTaskTitle,
+            isInterruption: entryInterruption,
             fullTimestamp: entry.timestamp,
         };
     });
@@ -758,8 +767,17 @@ function ContextSwitchTimelineCard({ timeline }: { timeline: TimelineEntry[] | n
     );
 }
 
-function TaskContextHeatmapCard({ heatmap }: { heatmap: HeatmapData | null }) {
-    if (!heatmap || !heatmap.rows.length) {
+function TaskContextHeatmapCard({ heatmap }: { heatmap: HeatmapData | null | any }) {
+    const rows: string[] = Array.isArray(heatmap?.rows) ? heatmap.rows : [];
+    const columns: string[] = Array.isArray(heatmap?.columns) ? heatmap.columns : [];
+    const cells: (number | null)[][] = Array.isArray(heatmap?.cells) ? heatmap.cells : [];
+    const sampleSizes: number[][] = Array.isArray(heatmap?.sampleSizes)
+        ? heatmap.sampleSizes
+        : Array.isArray(heatmap?.sample_sizes)
+          ? heatmap.sample_sizes
+          : [];
+
+    if (!rows.length || !columns.length || !cells.length) {
         return (
             <Card>
                 <CardHeader>
@@ -778,7 +796,7 @@ function TaskContextHeatmapCard({ heatmap }: { heatmap: HeatmapData | null }) {
             </Card>
         );
     }
-    const { rows, columns, cells, sampleSizes } = heatmap;
+    // destructured above safely
     let nonNullCount = 0;
     for (const row of cells) for (const v of row) if (v != null) nonNullCount++;
     if (nonNullCount < 3) {
