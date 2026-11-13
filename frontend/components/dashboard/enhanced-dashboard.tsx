@@ -43,6 +43,7 @@ import { LiveFocusTracker } from "@/components/dashboard/live-focus-tracker";
 import { LocationGeofenceSimulator } from "@/components/dashboard/location-geofence-simulator";
 import { AskContextIQDrawer } from "@/components/dashboard/ask-contextiq-drawer";
 import { GamificationBadges } from "@/components/dashboard/gamification-badges";
+import { DailyRoutineChoresPanel } from "@/components/dashboard/daily-routine-chores-panel";
 import { useUserProfile } from "@/context/user-profile-context";
 
 interface EnhancedDashboardProps { userId: string; periodDays?: number; }
@@ -167,7 +168,10 @@ export function EnhancedDashboard({ userId, periodDays = 30 }: EnhancedDashboard
                 {/* 1. Core KPIs Strip (Immediate Above-the-Fold Vital Signs) */}
                 <TopMetrics metrics={metrics} />
 
-                {/* 2. Core Interactive Row: Focus & Lag Tracker + Top Friction Breakdown */}
+                {/* 2. User's Real Daily Routine, Chores & Safety Anchors from PostgreSQL */}
+                <DailyRoutineChoresPanel />
+
+                {/* 3. Core Interactive Row: Focus & Lag Tracker + Top Friction Breakdown */}
                 <div className="grid gap-4 lg:grid-cols-2">
                     <LiveFocusTracker onSessionRecorded={loadAnalytics} />
                     <FrictionSourcesCard metrics={metrics} />
