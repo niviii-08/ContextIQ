@@ -99,7 +99,7 @@ export function Topbar() {
         >
           <PersonaIcon className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform" />
           <span className="font-bold text-indigo-700 dark:text-indigo-300 hidden sm:inline">
-            {profile.name} · {personaMeta.title.split("/")[0].trim()}
+            {profile.name} · {profile.customTitle || profile.primaryOccupation || personaMeta.title.split("/")[0].trim()}
           </span>
           <Settings2 className="h-3 w-3 text-indigo-500/70" />
         </button>

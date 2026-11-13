@@ -52,21 +52,21 @@ export const mockAssociations: Association[] = [
   {
     id: "assoc-001",
     context: "Department",
-    reliableTasks: ["Collect Form", "Submit Record"],
-    atRiskTasks: ["Internship Document"],
+    reliableTasks: ["Architecture Review", "Unit Test Execution"],
+    atRiskTasks: ["Deployment Verification Check"],
     confidence: 0.82,
   },
   {
     id: "assoc-002",
     context: "Home",
-    reliableTasks: ["Water Plants"],
-    atRiskTasks: ["Pay Hostel Fee", "Reply to Advisor Email"],
+    reliableTasks: ["Daily Chore: Vessel washing / Dishwashing"],
+    atRiskTasks: ["Weekend Chore: Dress washing / Laundry", "Push uncommitted Git branch"],
     confidence: 0.71,
   },
   {
     id: "assoc-003",
     context: "Library",
-    reliableTasks: ["Prepare Seminar Slides"],
+    reliableTasks: ["Sprint Retrospective Notes"],
     atRiskTasks: [],
     confidence: 0.6,
   },
@@ -76,7 +76,7 @@ export const mockPredictions: ForgettingPrediction[] = [
   {
     id: "pred-001",
     taskId: "task-001",
-    taskTitle: "Lab Record",
+    taskTitle: "Core Feature Implementation",
     riskScore: 82,
     riskLevel: "HIGH",
     reasons: [
@@ -102,7 +102,7 @@ export const mockPredictions: ForgettingPrediction[] = [
   {
     id: "pred-002",
     taskId: "task-006",
-    taskTitle: "Pay Hostel Fee",
+    taskTitle: "Weekend Chore: Dress washing / Laundry",
     riskScore: 71,
     riskLevel: "HIGH",
     reasons: [
@@ -128,7 +128,7 @@ export const mockPredictions: ForgettingPrediction[] = [
   {
     id: "pred-003",
     taskId: "task-002",
-    taskTitle: "Submit Internship Document",
+    taskTitle: "Deployment Verification Check",
     riskScore: 54,
     riskLevel: "MEDIUM",
     reasons: [
@@ -154,7 +154,7 @@ export const mockPredictions: ForgettingPrediction[] = [
   {
     id: "pred-004",
     taskId: "task-005",
-    taskTitle: "Reply to Advisor Email",
+    taskTitle: "Push uncommitted Git branch",
     riskScore: 28,
     riskLevel: "LOW",
     reasons: [
@@ -178,10 +178,10 @@ export const mockRecommendations: Recommendation[] = [
   {
     id: "rec-001",
     recommendationType: "context_based_reminder",
-    triggeringBehaviour: "Internship Document is associated with the Department context.",
+    triggeringBehaviour: "Deployment Verification Check is associated with the Department context.",
     evidence: [
-      { field: "association_confidence", value: "0.82", source: "Association:Department->Internship Document" },
-      { field: "association_support", value: "0.40", source: "Association:Department->Internship Document" },
+      { field: "association_confidence", value: "0.82", source: "Association:Department->Deployment Verification Check" },
+      { field: "association_support", value: "0.40", source: "Association:Department->Deployment Verification Check" },
     ],
     evidenceStrength: 0.82,
     impactScore: 0.82,
@@ -189,11 +189,11 @@ export const mockRecommendations: Recommendation[] = [
     expectedBenefit: "Use a reliably observed context-task association when planning the next action.",
     feedback: [],
     context: "Department",
-    reliableTasks: ["Collect Form", "Submit Record"],
+    reliableTasks: ["Architecture Review", "Unit Test Execution"],
     suggestedTasks: [
       {
         taskId: "task-002",
-        title: "Internship Document",
+        title: "Deployment Verification Check",
         reason: "Often needed alongside admin visits to this context.",
       },
     ],
@@ -203,10 +203,10 @@ export const mockRecommendations: Recommendation[] = [
   {
     id: "rec-002",
     recommendationType: "recurring_forgotten_task_prevention",
-    triggeringBehaviour: "Pay Hostel Fee is associated with Home and has observed forgetting exposure.",
+    triggeringBehaviour: "Weekend Chore: Dress washing / Laundry is associated with Home and has observed forgetting exposure.",
     evidence: [
-      { field: "association_confidence", value: "0.71", source: "Association:Home->Pay Hostel Fee" },
-      { field: "forgetting_probability", value: "0.71", source: "ForgettingPrediction:Pay Hostel Fee" },
+      { field: "association_confidence", value: "0.71", source: "Association:Home->Weekend Chore: Dress washing / Laundry" },
+      { field: "forgetting_probability", value: "0.71", source: "ForgettingPrediction:Weekend Chore: Dress washing / Laundry" },
     ],
     evidenceStrength: 0.71,
     impactScore: 0.71,
@@ -214,11 +214,11 @@ export const mockRecommendations: Recommendation[] = [
     expectedBenefit: "Reduce exposure to the observed forgetting risk by prompting this task in its associated context.",
     feedback: [],
     context: "Home",
-    reliableTasks: ["Water Plants"],
+    reliableTasks: ["Daily Chore: Vessel washing / Dishwashing"],
     suggestedTasks: [
       {
         taskId: "task-006",
-        title: "Pay Hostel Fee",
+        title: "Weekend Chore: Dress washing / Laundry",
         reason: "Frequently forgotten during evening hours at home.",
       },
     ],
@@ -244,7 +244,7 @@ export const mockInsights: BehaviourInsight[] = [
     type: "FREQUENTLY_FORGOTTEN",
     title: "Your most frequently forgotten task",
     description:
-      "\"Water Plants\" has been forgotten 8 times in the last 30 days, usually before 9 AM.",
+      "\"Daily Chore: Vessel washing / Dishwashing\" has been forgotten 8 times in the last 30 days, usually before 9 AM.",
     priority: "MEDIUM",
     metricLabel: "Forgotten",
     metricValue: "8 times / 30 days",
@@ -266,7 +266,7 @@ export const mockInsights: BehaviourInsight[] = [
     type: "STRONGEST_ASSOCIATION",
     title: "Your strongest contextual association",
     description:
-      "'Department' + 'Collect Form' has an 82% same-visit completion association.",
+      "'Department' + 'Architecture Review' has an 82% same-visit completion association.",
     priority: "LOW",
     metricLabel: "Confidence",
     metricValue: "82%",

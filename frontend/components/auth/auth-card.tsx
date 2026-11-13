@@ -297,23 +297,14 @@ export function AuthCard({ initialMode = "login" }: AuthCardProps) {
       } else {
         const errData = await res.json().catch(() => ({}));
         setAuthError(errData.detail || "Invalid email or password.");
+        return;
       }
-    } catch {
-      // offline fallback
+    } catch (err: any) {
+      setAuthError("Could not connect to PostgreSQL backend on port 8000. Please ensure services are active.");
+      return;
     } finally {
       setIsSubmitting(false);
     }
-
-    login({
-      name: name.trim() || "Neevetha",
-      email: email.trim() || "neevetha@contextiq.io",
-      role: selectedRole,
-      customTitle,
-      organization,
-      focusRhythm: selectedRhythm,
-      isAuthenticated: true,
-    });
-    router.push("/tasks");
   };
 
   const handleSignupSubmit = async (e?: React.FormEvent) => {
@@ -417,95 +408,14 @@ export function AuthCard({ initialMode = "login" }: AuthCardProps) {
       } else {
         const errData = await res.json().catch(() => ({}));
         setAuthError(errData.detail || "Signup failed on database server.");
+        return;
       }
-    } catch {
-      // offline fallback
+    } catch (err: any) {
+      setAuthError("Could not connect to PostgreSQL backend on port 8000. Please ensure services are active.");
+      return;
     } finally {
       setIsSubmitting(false);
     }
-
-    // Offline task generation from collected questionnaire items ONLY
-    const offlineTasks = [
-      ...dailyChores.map((c, i) => ({
-        id: `dc-${i}`,
-        title: `Daily Chore: ${c}`,
-        description: `Registered daily routine chore: ${c}`,
-        category: "Daily Chores",
-        context: "Home",
-        status: "PENDING" as const,
-        priority: "MEDIUM" as const,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        estimatedMinutes: 25,
-        tags: ["Daily Chores"],
-        forgottenCount: 0,
-        completionStreak: 0,
-      })),
-      ...weekendChores.map((c, i) => ({
-        id: `wc-${i}`,
-        title: `Weekend Chore: ${c}`,
-        description: `Registered weekend chore routine: ${c}`,
-        category: "Weekend Chores",
-        context: "Home",
-        status: "PENDING" as const,
-        priority: "MEDIUM" as const,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        estimatedMinutes: 45,
-        tags: ["Weekend Chores"],
-        forgottenCount: 0,
-        completionStreak: 0,
-      })),
-      ...frequentForgetItems.map((f, i) => ({
-        id: `fa-${i}`,
-        title: `Anti-Forget Anchor: ${f}`,
-        description: `Safety memory checkpoint: ${f}`,
-        category: "Memory Anchor",
-        context: "Safety",
-        status: "PENDING" as const,
-        priority: "HIGH" as const,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        estimatedMinutes: 10,
-        tags: ["Memory Anchor"],
-        forgottenCount: 0,
-        completionStreak: 0,
-      })),
-      ...tasksToSubmit.map((t, i) => ({
-        id: `init-${i}`,
-        title: t.title,
-        description: "Focus work item",
-        category: t.category || "Deep Work",
-        context: "Work",
-        status: "PENDING" as const,
-        priority: (t.priority?.toUpperCase() as any) || "MEDIUM",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        estimatedMinutes: t.estimated_minutes || 45,
-        tags: [t.category || "Deep Work"],
-        forgottenCount: 0,
-        completionStreak: 0,
-      })),
-    ];
-    localStorage.setItem("contextiq_user_tasks", JSON.stringify(offlineTasks));
-
-    login({
-      name: name.trim() || "User",
-      email: email.trim() || "user@contextiq.io",
-      role: selectedRole,
-      customTitle: customTitle.trim() || PERSONA_DEFINITIONS[selectedRole]?.title.split("/")[0].trim(),
-      organization: organization.trim() || "Focus Mode",
-      focusRhythm: selectedRhythm,
-      dailyRoutine: dailyRoutine.trim(),
-      dailyChores,
-      weekendChores,
-      frequentForgetItems,
-      timeDelayTriggers,
-      primaryOccupation: customTitle.trim(),
-      isAuthenticated: true,
-      onboardingCompleted: true,
-    });
-    router.push("/tasks");
   };
 
   const handleQuickDemo = async (demo: (typeof DEMO_ACCOUNTS)[0]) => {

@@ -449,17 +449,18 @@ const DEFAULT_PROFILE: UserCognitiveProfile = {
   dailyGoalMinutes: 120,
   onboardingCompleted: true,
   isAuthenticated: true,
-  dailyRoutine: "Morning deep work sprint 8 AM - 12 PM, review PRs, evening code sync",
-  dailyChores: ["Vessel washing / Dishwashing", "Cooking & Meal Prep", "Sweeping & Mopping"],
-  weekendChores: ["Dress washing / Laundry", "Deep room & workstation clean", "Grocery market run"],
-  frequentForgetItems: ["Switching off geyser/stove", "Taking daily vitamins", "Pushing git branch before leaving"],
-  timeDelayTriggers: ["Reels & Shorts doomscroll loops", "Post-lunch 2 PM slump", "Meeting-to-code context switches"],
-  primaryOccupation: "Software Engineering & Distributed Systems",
+  dailyRoutine: "",
+  dailyChores: [],
+  weekendChores: [],
+  frequentForgetItems: [],
+  timeDelayTriggers: [],
+  primaryOccupation: "Senior Software Engineer",
 };
 
 interface UserProfileContextType {
   profile: UserCognitiveProfile;
   updateProfile: (updates: Partial<UserCognitiveProfile>) => void;
+  saveProfileToDb: (updates: Partial<UserCognitiveProfile>) => Promise<boolean>;
   setRole: (role: RolePersona) => void;
   setLanguage: (lang: LanguageCode) => void;
   login: (userData?: Partial<UserCognitiveProfile>) => void;
@@ -479,6 +480,7 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Hydrate from localStorage first, then sync fresh profile from PostgreSQL
   useEffect(() => {
     try {
       const saved = localStorage.getItem("contextiq_user_profile");
@@ -493,6 +495,62 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
       // fallback to default
     }
     setIsLoaded(true);
+
+    // Fetch fresh user profile from PostgreSQL
+    const syncFromDb = async () => {
+      try {
+        const token = localStorage.getItem("contextiq_token");
+        const userId = localStorage.getItem("contextiq_user_id");
+        if (!token && !userId) return;
+
+        const res = await fetch("http://localhost:8000/api/v1/users/me", {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(userId && !token ? { "X-User-Id": userId } : {}),
+          },
+        });
+
+        if (res.ok) {
+          const u = await res.json();
+          const parseJson = (val: any) => {
+            if (!val) return [];
+            if (Array.isArray(val)) return val;
+            try { return JSON.parse(val); } catch { return []; }
+          };
+
+          const synced: Partial<UserCognitiveProfile> = {
+            name: u.display_name || profile.name,
+            email: u.email || profile.email,
+            role: (u.role_persona as RolePersona) || profile.role,
+            customTitle: u.custom_title || profile.customTitle,
+            organization: u.organization || profile.organization,
+            focusRhythm: (u.focus_rhythm as FocusRhythm) || profile.focusRhythm,
+            dailyGoalMinutes: u.daily_goal_minutes || profile.dailyGoalMinutes,
+            language: (u.language as LanguageCode) || profile.language,
+            distractions: parseJson(u.distractions),
+            dailyRoutine: u.daily_routine ?? "",
+            dailyChores: parseJson(u.daily_chores),
+            weekendChores: parseJson(u.weekend_chores),
+            frequentForgetItems: parseJson(u.frequent_forget_items),
+            timeDelayTriggers: parseJson(u.time_delay_triggers),
+            primaryOccupation: u.primary_occupation || u.custom_title || profile.primaryOccupation,
+            isAuthenticated: true,
+            onboardingCompleted: true,
+          };
+
+          setProfile((prev) => {
+            const next = { ...prev, ...synced };
+            localStorage.setItem("contextiq_user_profile", JSON.stringify(next));
+            return next;
+          });
+        }
+      } catch {
+        // silent offline fallback
+      }
+    };
+
+    void syncFromDb();
   }, []);
 
   const updateProfile = (updates: Partial<UserCognitiveProfile>) => {
@@ -505,6 +563,49 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
       }
       return next;
     });
+  };
+
+  const saveProfileToDb = async (updates: Partial<UserCognitiveProfile>): Promise<boolean> => {
+    updateProfile(updates);
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("contextiq_token") : null;
+    const userId = typeof window !== "undefined" ? localStorage.getItem("contextiq_user_id") : null;
+
+    try {
+      const payload = {
+        display_name: updates.name !== undefined ? updates.name : profile.name,
+        role_persona: updates.role !== undefined ? updates.role : profile.role,
+        custom_title: updates.customTitle !== undefined ? updates.customTitle : profile.customTitle,
+        organization: updates.organization !== undefined ? updates.organization : profile.organization,
+        focus_rhythm: updates.focusRhythm !== undefined ? updates.focusRhythm : profile.focusRhythm,
+        daily_goal_minutes: updates.dailyGoalMinutes !== undefined ? updates.dailyGoalMinutes : profile.dailyGoalMinutes,
+        language: updates.language !== undefined ? updates.language : profile.language,
+        distractions: updates.distractions !== undefined ? updates.distractions : profile.distractions,
+        daily_routine: updates.dailyRoutine !== undefined ? updates.dailyRoutine : profile.dailyRoutine,
+        daily_chores: updates.dailyChores !== undefined ? updates.dailyChores : profile.dailyChores,
+        weekend_chores: updates.weekendChores !== undefined ? updates.weekendChores : profile.weekendChores,
+        frequent_forget_items: updates.frequentForgetItems !== undefined ? updates.frequentForgetItems : profile.frequentForgetItems,
+        time_delay_triggers: updates.timeDelayTriggers !== undefined ? updates.timeDelayTriggers : profile.timeDelayTriggers,
+        primary_occupation: updates.primaryOccupation !== undefined ? updates.primaryOccupation : (updates.customTitle || profile.customTitle),
+      };
+
+      const res = await fetch("http://localhost:8000/api/v1/users/me", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userId && !token ? { "X-User-Id": userId } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        return true;
+      }
+    } catch {
+      // offline fallback
+    }
+    return false;
   };
 
   const setRole = (role: RolePersona) => updateProfile({ role });
@@ -538,6 +639,7 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
       value={{
         profile,
         updateProfile,
+        saveProfileToDb,
         setRole,
         setLanguage,
         login,

@@ -40,7 +40,20 @@ function getStoredTasks(): Task[] {
       const raw = localStorage.getItem("contextiq_user_tasks");
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          // Purge any legacy dummy tasks
+          const cleaned = parsed.filter((t: any) =>
+            !t.title?.includes("Lab Record") &&
+            !t.title?.includes("Hostel Fee") &&
+            !t.title?.includes("Internship Document") &&
+            !t.title?.includes("Water Plants") &&
+            !t.title?.includes("Seminar Slides")
+          );
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem("contextiq_user_tasks", JSON.stringify(cleaned));
+          }
+          return cleaned;
+        }
       }
     } catch {}
   }
@@ -172,9 +185,9 @@ const liveTasksApi: TasksApi = {
       saveStoredTasks(mapped);
       return { data: mapped, error: null };
     }
-    // If backend returns empty or offline, fallback to user's registered tasks
-    const local = getStoredTasks();
-    if (local.length > 0) {
+    // Only if network request failed completely (e.g. offline/network error)
+    if (res.error) {
+      const local = getStoredTasks();
       let filtered = local;
       if (filters?.status) filtered = filtered.filter((t) => t.status === filters.status);
       if (filters?.context) filtered = filtered.filter((t) => t.context === filters.context);
@@ -299,7 +312,6 @@ const liveTasksApi: TasksApi = {
 export const tasksApi: TasksApi = {
   list: async (filters) => {
     const live = await liveTasksApi.list(filters);
-    if (live.data && live.data.length > 0) return live;
     if (!live.error) return live;
     return mockTasksApi.list(filters);
   },
