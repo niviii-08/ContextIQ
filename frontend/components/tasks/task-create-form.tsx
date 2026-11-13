@@ -89,7 +89,7 @@ export function TaskCreateForm({ onCreated }: { onCreated: () => void }) {
                 id="task-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Submit Lab Record"
+                placeholder="e.g. Vessel washing, Review PR #412, Push git branch"
                 required
               />
             </div>
@@ -100,7 +100,7 @@ export function TaskCreateForm({ onCreated }: { onCreated: () => void }) {
                 id="task-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Optional details about this task"
+                placeholder="Optional details, memory anchors, or instructions"
               />
             </div>
 
@@ -110,7 +110,7 @@ export function TaskCreateForm({ onCreated }: { onCreated: () => void }) {
                 id="task-category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g. Academic"
+                placeholder="e.g. Daily Chores, Weekend Chores, Deep Work"
                 required
               />
             </div>
@@ -118,6 +118,13 @@ export function TaskCreateForm({ onCreated }: { onCreated: () => void }) {
             <div className="space-y-1.5">
               <Label htmlFor="task-context">Context</Label>
               <Input
+                id="task-context"
+                value={context}
+                onChange={(e) => setContext(e.target.value)}
+                placeholder="e.g. Home, Tech Desk, Studio"
+                required
+              />
+            </div>
                 id="task-context"
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
