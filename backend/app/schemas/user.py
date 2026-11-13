@@ -52,6 +52,23 @@ class UserSignupWithTasks(BaseModel):
     initial_tasks: Optional[list[InitialTaskItem]] = []
 
 
+class UserUpdate(BaseModel):
+    display_name: Optional[str] = None
+    role_persona: Optional[str] = None
+    custom_title: Optional[str] = None
+    organization: Optional[str] = None
+    focus_rhythm: Optional[str] = None
+    daily_goal_minutes: Optional[int] = None
+    language: Optional[str] = None
+    distractions: Optional[list[str]] = None
+    daily_routine: Optional[str] = None
+    daily_chores: Optional[list[str]] = None
+    weekend_chores: Optional[list[str]] = None
+    frequent_forget_items: Optional[list[str]] = None
+    time_delay_triggers: Optional[list[str]] = None
+    primary_occupation: Optional[str] = None
+
+
 class UserRead(ORMBase, UserBase):
     id: uuid.UUID
     is_active: bool

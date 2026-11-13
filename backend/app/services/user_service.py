@@ -10,7 +10,7 @@ from app.models.enums import TaskEventType, TaskPriority, TaskStatus
 from app.models.task import Task
 from app.models.task_event import TaskEvent
 from app.models.user import User
-from app.schemas.user import UserCreate, UserSignupWithTasks
+from app.schemas.user import UserCreate, UserSignupWithTasks, UserUpdate
 
 try:
     import bcrypt
@@ -75,6 +75,8 @@ def signup_user_with_tasks(db: Session, payload: UserSignupWithTasks) -> tuple[U
 
     if user is not None:
         user.display_name = payload.display_name or user.display_name
+        if payload.password:
+            user.hashed_password = _hash_password(payload.password)
         if payload.role_persona:
             user.role_persona = payload.role_persona
         if payload.custom_title:
@@ -235,4 +237,105 @@ def get_user(db: Session, user_id: uuid.UUID) -> User:
     user = db.get(User, user_id)
     if user is None:
         raise NotFoundError("User not found.")
+    return user
+
+
+def update_user_profile(db: Session, user: User, payload: UserUpdate) -> User:
+    """
+    Updates an existing user's profile, routine, chores, forget items, and delay triggers
+    in PostgreSQL, and creates new task records for any newly added chores or forget anchors.
+    """
+    if payload.display_name is not None:
+        user.display_name = payload.display_name
+    if payload.role_persona is not None:
+        user.role_persona = payload.role_persona
+    if payload.custom_title is not None:
+        user.custom_title = payload.custom_title
+    if payload.organization is not None:
+        user.organization = payload.organization
+    if payload.focus_rhythm is not None:
+        user.focus_rhythm = payload.focus_rhythm
+    if payload.daily_goal_minutes is not None:
+        user.daily_goal_minutes = payload.daily_goal_minutes
+    if payload.language is not None:
+        user.language = payload.language
+    if payload.distractions is not None:
+        user.distractions = json.dumps(payload.distractions)
+    if payload.daily_routine is not None:
+        user.daily_routine = payload.daily_routine
+    if payload.daily_chores is not None:
+        user.daily_chores = json.dumps(payload.daily_chores)
+    if payload.weekend_chores is not None:
+        user.weekend_chores = json.dumps(payload.weekend_chores)
+    if payload.frequent_forget_items is not None:
+        user.frequent_forget_items = json.dumps(payload.frequent_forget_items)
+    if payload.time_delay_triggers is not None:
+        user.time_delay_triggers = json.dumps(payload.time_delay_triggers)
+    if payload.primary_occupation is not None:
+        user.primary_occupation = payload.primary_occupation
+
+    # Sync any newly selected chores or anchors into tasks
+    def _add_task_if_not_exists(title: str, description: str, priority: TaskPriority, minutes: int, category: str, is_recurring: bool = False):
+        existing_task = db.scalar(
+            select(Task).where(Task.user_id == user.id, Task.title == title, Task.status == TaskStatus.PENDING)
+        )
+        if existing_task is None:
+            task = Task(
+                user_id=user.id,
+                title=title,
+                description=description,
+                status=TaskStatus.PENDING,
+                priority=priority,
+                estimated_minutes=minutes,
+                context_tag=category,
+                is_recurring=is_recurring,
+            )
+            db.add(task)
+            db.flush()
+            event = TaskEvent(
+                task_id=task.id,
+                user_id=user.id,
+                event_type=TaskEventType.CREATED,
+                event_metadata={"source": "profile_update", "category": category},
+            )
+            db.add(event)
+
+    if payload.daily_chores:
+        for chore in payload.daily_chores:
+            if chore.strip():
+                _add_task_if_not_exists(
+                    title=f"Daily Chore: {chore.strip()}",
+                    description=f"Recurring daily home chore ({chore.strip()}) updated in profile",
+                    priority=TaskPriority.MEDIUM,
+                    minutes=25,
+                    category="Daily Chores",
+                    is_recurring=True,
+                )
+
+    if payload.weekend_chores:
+        for w_chore in payload.weekend_chores:
+            if w_chore.strip():
+                _add_task_if_not_exists(
+                    title=f"Weekend Chore: {w_chore.strip()}",
+                    description=f"Weekly chore routine ({w_chore.strip()}) updated in profile",
+                    priority=TaskPriority.MEDIUM,
+                    minutes=45,
+                    category="Weekend Chores",
+                    is_recurring=True,
+                )
+
+    if payload.frequent_forget_items:
+        for forget_item in payload.frequent_forget_items:
+            if forget_item.strip():
+                _add_task_if_not_exists(
+                    title=f"Anti-Forget Anchor: {forget_item.strip()}",
+                    description=f"Identified high-forgetting-risk checkpoint: {forget_item.strip()}",
+                    priority=TaskPriority.HIGH,
+                    minutes=10,
+                    category="Memory Anchor",
+                    is_recurring=False,
+                )
+
+    db.commit()
+    db.refresh(user)
     return user

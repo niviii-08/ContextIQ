@@ -13,8 +13,13 @@ from app.core.errors import NotFoundError
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.task import TaskRead
-from app.schemas.user import UserCreate, UserRead, UserSignupWithTasks
-from app.services.user_service import authenticate_user, create_user, signup_user_with_tasks
+from app.schemas.user import UserCreate, UserRead, UserSignupWithTasks, UserUpdate
+from app.services.user_service import (
+    authenticate_user,
+    create_user,
+    signup_user_with_tasks,
+    update_user_profile,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/users", tags=["users"])
@@ -90,3 +95,28 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
 @router.get("/me", response_model=UserRead)
 def read_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.patch("/me", response_model=UserRead)
+def update_me(
+    payload: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Updates the authenticated user's profile, daily routine, chores,
+    memory anchors, and delay triggers directly in PostgreSQL.
+    """
+    return update_user_profile(db, current_user, payload)
+
+
+@router.put("/me", response_model=UserRead)
+def replace_me(
+    payload: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Full update of the authenticated user's profile and routine parameters.
+    """
+    return update_user_profile(db, current_user, payload)
