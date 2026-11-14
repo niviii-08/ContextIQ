@@ -17,15 +17,29 @@ const mockContextApi: ContextApi = {
 };
 
 const liveContextApi: ContextApi = {
-  getMetrics: (date) =>
-    apiClient.request<ContextMetrics>("/context/metrics", {
-      query: { date },
-      baseUrl: "context",
-    }),
-  listAssociations: () =>
-    apiClient.request<Association[]>("/context/associations", {
-      baseUrl: "context",
-    }),
+  getMetrics: async (date) => {
+    try {
+      const res = await apiClient.request<ContextMetrics>("/context/metrics", {
+        query: { date },
+        baseUrl: "context",
+      });
+      if (res.data) return res;
+    } catch {
+      // offline fallback
+    }
+    return mockResult(() => mockContextMetrics);
+  },
+  listAssociations: async () => {
+    try {
+      const res = await apiClient.request<Association[]>("/context/associations", {
+        baseUrl: "context",
+      });
+      if (res.data) return res;
+    } catch {
+      // offline fallback
+    }
+    return mockResult(() => mockAssociations);
+  },
 };
 
 export const contextApi: ContextApi = apiClient.USE_MOCK
