@@ -125,13 +125,6 @@ export function TaskCreateForm({ onCreated }: { onCreated: () => void }) {
                 required
               />
             </div>
-                id="task-context"
-                value={context}
-                onChange={(e) => setContext(e.target.value)}
-                placeholder="e.g. Department"
-                required
-              />
-            </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="task-priority">Priority</Label>
