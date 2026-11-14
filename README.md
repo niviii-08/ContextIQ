@@ -46,7 +46,16 @@ flowchart LR
     INT --> UI
 ```
 
-Services run on ports 8000-8004, with the frontend on 3000. The full diagram, boundaries, and deployment model are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Services run on:
+- **Frontend Web UI**: Port `3001` (Next.js 16 Turbopack)
+- **Core Backend API**: Port `8000` (FastAPI + PostgreSQL)
+- **Data Engine**: Port `8001` (FastAPI behavioural telemetry & chronometry)
+- **PostgreSQL Database**: Port `5433` (ACID persistence)
+
+For detailed module documentation, see:
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (System architecture & topology)
+- [docs/PREDICTIONS_AND_RECOMMENDATIONS_GUIDE.md](docs/PREDICTIONS_AND_RECOMMENDATIONS_GUIDE.md) (Task Risk Predictions & 'One More Thing' Engine)
+- [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md) (Telemetry ingestion & session reconstruction)
 
 ## Data and Pipeline
 
