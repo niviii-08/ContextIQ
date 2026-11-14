@@ -44,6 +44,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { polishRoutineWithAI, polishAndBulletizeRoutineLocally } from "@/lib/routine-formatter";
 
 interface AuthCardProps {
   initialMode?: "login" | "signup";
@@ -158,6 +159,23 @@ export function AuthCard({ initialMode = "login" }: AuthCardProps) {
 
   // Form states - Step 2: Daily Routine & Real-Life Chores (Empty by default)
   const [dailyRoutine, setDailyRoutine] = useState("");
+  const [isPolishingRoutine, setIsPolishingRoutine] = useState(false);
+  const [routinePolishedFeedback, setRoutinePolishedFeedback] = useState(false);
+
+  const handlePolishRoutine = async () => {
+    if (!dailyRoutine.trim()) return;
+    setIsPolishingRoutine(true);
+    try {
+      const polished = await polishRoutineWithAI(dailyRoutine);
+      if (polished) {
+        setDailyRoutine(polished);
+        setRoutinePolishedFeedback(true);
+        setTimeout(() => setRoutinePolishedFeedback(false), 4000);
+      }
+    } finally {
+      setIsPolishingRoutine(false);
+    }
+  };
   const [dailyChores, setDailyChores] = useState<string[]>([]);
   const [customDailyChore, setCustomDailyChore] = useState("");
   const [weekendChores, setWeekendChores] = useState<string[]>([]);
@@ -345,7 +363,9 @@ export function AuthCard({ initialMode = "login" }: AuthCardProps) {
           daily_goal_minutes: 120,
           language: profile.language,
           distractions: profile.distractions,
-          daily_routine: dailyRoutine.trim(),
+          daily_routine: dailyRoutine.trim()
+            ? (dailyRoutine.includes("•") ? dailyRoutine.trim() : polishAndBulletizeRoutineLocally(dailyRoutine))
+            : "",
           daily_chores: dailyChores,
           weekend_chores: weekendChores,
           frequent_forget_items: frequentForgetItems,
@@ -951,20 +971,40 @@ export function AuthCard({ initialMode = "login" }: AuthCardProps) {
 
                   {/* Daily Routine Textarea */}
                   <div>
-                    <label className="text-xs font-semibold text-foreground flex items-center justify-between mb-1.5">
-                      <span className="flex items-center gap-1.5">
+                    <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1.5">
+                      <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                         <Calendar className="h-3.5 w-3.5 text-indigo-500" />
                         Describe Your Daily Routine &amp; Schedule:
-                      </span>
-                      <span className="text-[10px] font-mono text-muted-foreground">Calibrates flow chronometry</span>
-                    </label>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        {routinePolishedFeedback && (
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 animate-fade-in">
+                            <Check className="h-3 w-3" /> Polished into bullet points!
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handlePolishRoutine}
+                          disabled={isPolishingRoutine || !dailyRoutine.trim()}
+                          className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/70 dark:hover:bg-indigo-900/80 px-2.5 py-1 rounded-lg border border-indigo-200/80 dark:border-indigo-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
+                          title="Auto-correct English and format into clean bullet points"
+                        >
+                          <Sparkles className={cn("h-3 w-3 text-indigo-500", isPolishingRoutine && "animate-spin")} />
+                          {isPolishingRoutine ? "Polishing..." : "✨ Format & Fix English"}
+                        </button>
+                      </div>
+                    </div>
                     <textarea
-                      rows={2}
+                      rows={3}
                       value={dailyRoutine}
                       onChange={(e) => setDailyRoutine(e.target.value)}
                       placeholder="e.g. Wake up 7:30 AM, quick breakfast, deep coding sprint 9 AM - 1 PM, team standup, PR review, evening walk, reading before sleep..."
-                      className="w-full px-3.5 py-2 rounded-xl border border-border/80 bg-background text-xs text-foreground focus:outline-hidden focus:ring-2 focus:ring-indigo-500/40"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border/80 bg-background text-xs text-foreground focus:outline-hidden focus:ring-2 focus:ring-indigo-500/40 leading-relaxed font-mono sm:font-sans"
                     />
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-1">
+                      <span>💡 Broken or informal English is automatically polished and formatted into bullet points in the database.</span>
+                      <span className="font-mono">{dailyRoutine.split("\n").filter((l) => l.trim().startsWith("•")).length > 0 ? `${dailyRoutine.split("\n").filter((l) => l.trim().startsWith("•")).length} schedule bullets` : "Auto-formats on next"}</span>
+                    </div>
                   </div>
 
                   {/* Daily Chores Section */}
@@ -1133,7 +1173,12 @@ export function AuthCard({ initialMode = "login" }: AuthCardProps) {
                     </Button>
                     <Button
                       type="button"
-                      onClick={() => setSignupStep(3)}
+                      onClick={() => {
+                        if (dailyRoutine.trim() && !dailyRoutine.includes("•")) {
+                          setDailyRoutine(polishAndBulletizeRoutineLocally(dailyRoutine));
+                        }
+                        setSignupStep(3);
+                      }}
                       className="h-10 px-5 text-xs font-bold gap-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md shadow-indigo-500/25"
                     >
                       Next: Memory Anchors

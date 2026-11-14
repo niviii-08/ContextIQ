@@ -11,6 +11,7 @@ from app.models.task import Task
 from app.models.task_event import TaskEvent
 from app.models.user import User
 from app.schemas.user import UserCreate, UserSignupWithTasks, UserUpdate
+from app.services.routine_service import polish_and_bulletize_routine
 
 try:
     import bcrypt
@@ -72,6 +73,7 @@ def signup_user_with_tasks(db: Session, payload: UserSignupWithTasks) -> tuple[U
     weekend_chores_json = json.dumps(payload.weekend_chores) if payload.weekend_chores else None
     forget_items_json = json.dumps(payload.frequent_forget_items) if payload.frequent_forget_items else None
     delays_json = json.dumps(payload.time_delay_triggers) if payload.time_delay_triggers else None
+    polished_routine = polish_and_bulletize_routine(payload.daily_routine)
 
     if user is not None:
         user.display_name = payload.display_name or user.display_name
@@ -91,8 +93,8 @@ def signup_user_with_tasks(db: Session, payload: UserSignupWithTasks) -> tuple[U
             user.language = payload.language
         if payload.distractions:
             user.distractions = json.dumps(payload.distractions)
-        if payload.daily_routine:
-            user.daily_routine = payload.daily_routine
+        if payload.daily_routine is not None:
+            user.daily_routine = polished_routine
         if payload.daily_chores:
             user.daily_chores = daily_chores_json
         if payload.weekend_chores:
@@ -117,7 +119,7 @@ def signup_user_with_tasks(db: Session, payload: UserSignupWithTasks) -> tuple[U
             daily_goal_minutes=payload.daily_goal_minutes or 120,
             language=payload.language or "en",
             distractions=dist_str,
-            daily_routine=payload.daily_routine,
+            daily_routine=polished_routine,
             daily_chores=daily_chores_json,
             weekend_chores=weekend_chores_json,
             frequent_forget_items=forget_items_json,
@@ -262,7 +264,7 @@ def update_user_profile(db: Session, user: User, payload: UserUpdate) -> User:
     if payload.distractions is not None:
         user.distractions = json.dumps(payload.distractions)
     if payload.daily_routine is not None:
-        user.daily_routine = payload.daily_routine
+        user.daily_routine = polish_and_bulletize_routine(payload.daily_routine)
     if payload.daily_chores is not None:
         user.daily_chores = json.dumps(payload.daily_chores)
     if payload.weekend_chores is not None:
