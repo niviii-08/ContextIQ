@@ -18,14 +18,14 @@ export function AdvancedAnalyticsView({ userId }: { userId: string }) {
         setError(null);
 
         const [metricsResult, insightsResult, storyResult] = await Promise.all([
-          analyticsApi.getDerivedMetrics(userId, 30),
-          analyticsApi.getAllInsights(userId, 30),
-          analyticsApi.getStoryAnalytics(userId, 30),
+          analyticsApi.getDerivedMetrics(userId, 30).catch(() => ({ data: null, error: null })),
+          analyticsApi.getAllInsights(userId, 30).catch(() => ({ data: null, error: null })),
+          analyticsApi.getStoryAnalytics(userId, 30).catch(() => ({ data: null, error: null })),
         ]);
 
-        if (!metricsResult.error && metricsResult.data) setMetrics(metricsResult.data);
-        if (!insightsResult.error && insightsResult.data) setInsights(insightsResult.data);
-        if (!storyResult.error && storyResult.data) setStory(storyResult.data);
+        if (metricsResult?.data) setMetrics(metricsResult.data);
+        if (insightsResult?.data) setInsights(insightsResult.data);
+        if (storyResult?.data) setStory(storyResult.data);
       } catch (err) {
         setError("Failed to load analytics data");
         console.error(err);
