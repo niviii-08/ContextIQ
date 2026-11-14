@@ -67,6 +67,12 @@ export function TaskListItem({
             >
               {task.category || "General"}
             </span>
+            {task.isRecurring && (
+              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <CheckCircle2 className="h-2.5 w-2.5" />
+                Recurring
+              </span>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
